@@ -13,3 +13,15 @@ LedgerLine is a multi-role financial ledger engine built to guarantee strict ato
 | Account Holder A | user1@ledgerline.internal | User@123 |
 | Account Holder B | user2@ledgerline.internal | User@123 |
 | Auditor (Read-Only) | auditor@ledgerline.internal | Auditor@123 |
+
+## Live Deployment
+- **Live URL:** https://your-app-name.onrender.com
+- **Health Check:** https://your-app-name.onrender.com/health
+
+## Seed Credentials
+| Role | Email | Password | Starting Balance |
+|---|---|---|---|
+| Admin | admin@ledgerline.internal | Password@123 | N/A |
+| Account Holder (Alpha) | alpha@ledgerline.internal | Password@123 | ₹1,000.00 |
+| Account Holder (Beta) | beta@ledgerline.internal | Password@123 | ₹500.00 |
+| Auditor (Read-Only) | auditor@ledgerline.internal | Password@123 | N/A |
