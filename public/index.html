@@ -1,335 +1,321 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-950">
+<html lang="en" class="h-full bg-[#09090b] text-[#fafafa] antialiased">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LedgerLine — Verifiable Institutional Financial Engine</title>
+    <title>LedgerLine — High-Integrity Financial Ledger</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                        mono: ['"JetBrains Mono"', 'monospace'],
+                        sans: ['Geist', 'sans-serif'],
+                        mono: ['Geist Mono', 'monospace'],
                     },
                     colors: {
-                        brand: {
-                            50: '#ecfdf5',
-                            500: '#10b981',
-                            600: '#059669',
-                            900: '#064e3b',
-                        }
+                        border: '#27272a',
+                        muted: '#18181b',
+                        'muted-foreground': '#a1a1aa',
                     }
                 }
             }
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
     <style>
-        /* Custom scrollbar */
+        /* Custom spring easing function provided by user */
+        :root {
+            --spring-easing: linear(0, 0.0146, 0.0548, 0.1153, 0.1911, 0.2776, 0.3706, 0.4665, 0.562, 0.6545,
+                    0.7419, 0.8225, 0.8951, 0.9589, 1.0137, 1.0591, 1.0956, 1.1235, 1.1434, 1.156,
+                    1.1621, 1.1626, 1.1585, 1.1505, 1.1396, 1.1264, 1.1118, 1.0964, 1.0807, 1.0653,
+                    1.0505, 1.0367, 1.0241, 1.0128, 1.003, 0.9946, 0.9878, 0.9824, 0.9784, 0.9757,
+                    0.9741, 0.9734, 0.9737, 0.9746, 0.9761, 0.9781, 0.9803, 0.9828, 0.9853, 0.9878,
+                    0.9903, 0.9927, 0.9949, 0.9968, 0.9986, 1.0001, 1.0013, 1.0024, 1.0032, 1.0037,
+                    1.0041, 1.0043, 1.0043, 1.0042, 1.0041, 1.0038, 1.0034, 1.0031, 1.0026, 1.0022,
+                    1.0018, 1.0014, 1.001, 1.0007, 1.0004, 1.0001, 0.9999, 0.9997, 0.9996, 0.9994,
+                    0.9994, 0.9993, 0.9993, 0.9993, 0.9993, 0.9994, 0.9994, 0.9995, 0.9995, 0.9996,
+                    0.9997, 0.9997, 0.9998, 0.9999, 0.9999, 1, 1, 1, 1.0001, 1.0001, 1);
+        }
+
+        /* Spring-physics animations */
+        @keyframes springDrop {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes springPop {
+            from {
+                transform: scale(0.92);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .animate-spring-drop {
+            animation: springDrop 1.2s var(--spring-easing) forwards;
+        }
+
+        .animate-spring-pop {
+            animation: springPop 1.1s var(--spring-easing) forwards;
+        }
+
+        /* Modern shadcn scrollbars */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 4px;
+            height: 4px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #020617;
+            background: transparent;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #1e293b;
+            background: #27272a;
             border-radius: 9999px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #334155;
+            background: #3f3f46;
         }
 
-        .glass-card {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.6) 100%);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(51, 65, 85, 0.5);
+        .shadcn-card {
+            background-color: #0c0a09;
+            border: 1px solid #27272a;
         }
     </style>
 </head>
 
-<body
-    class="h-full text-slate-100 flex flex-col font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-300">
+<body class="h-full flex flex-col font-sans selection:bg-zinc-800 selection:text-zinc-100">
 
-    <!-- Top Institutional Navigation Bar -->
-    <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Top Navigation Header -->
+    <header class="border-b border-border bg-[#09090b]/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
 
-            <!-- Brand Logo -->
+            <!-- Brand & Status -->
             <div class="flex items-center space-x-3">
                 <div
-                    class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/20">
-                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                        <i class="fa-solid fa-layer-group text-emerald-400 text-sm"></i>
-                    </div>
+                    class="w-7 h-7 rounded-md bg-white flex items-center justify-center text-black font-semibold text-xs shadow-sm">
+                    <i class="fa-solid fa-cube text-[11px]"></i>
                 </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-base font-bold tracking-tight text-white">LedgerLine</span>
-                        <span
-                            class="text-[10px] tracking-widest font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase">ACID
-                            Core</span>
-                    </div>
-                    <p class="text-[11px] text-slate-400 font-medium">Verifiable Double-Entry Concurrency Engine</p>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm font-semibold tracking-tight">LedgerLine</span>
+                    <span class="text-[11px] text-muted-foreground">/</span>
+                    <span class="text-[11px] font-mono font-medium text-emerald-400">ACID Core</span>
                 </div>
             </div>
 
-            <!-- Engine Live Health Badge & Auth Controls -->
             <div class="flex items-center space-x-3">
                 <div
-                    class="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>POSTGRES NEON : CONNECTED</span>
+                    class="hidden sm:flex items-center space-x-2 text-[11px] font-mono text-muted-foreground px-2.5 py-1 rounded-md border border-border bg-muted">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>POSTGRES: NEON</span>
                 </div>
-                <div id="authHeaderState" class="flex items-center space-x-3"></div>
+                <div id="authHeaderState" class="flex items-center space-x-2"></div>
             </div>
         </div>
     </header>
 
-    <!-- Main View Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <!-- Main View -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
 
-        <!-- 1. LOGIN SCREEN -->
-        <div id="loginSection" class="max-w-md mx-auto my-12 transition-all">
-            <div class="glass-card p-8 rounded-3xl shadow-2xl relative overflow-hidden">
-                <div
-                    class="absolute -right-16 -top-16 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none">
-                </div>
-
+        <!-- 1. LOGIN / ACCOUNT PRESET SCREEN -->
+        <div id="loginSection" class="max-w-md w-full mx-auto my-auto animate-spring-pop">
+            <div class="shadcn-card p-6 sm:p-8 rounded-xl shadow-2xl relative">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold tracking-tight text-white">System Access</h2>
-                    <p class="text-xs text-slate-400 mt-1">Authenticate into the ACID ledger engine boundary.</p>
+                    <h2 class="text-xl font-semibold tracking-tight">Access Account</h2>
+                    <p class="text-xs text-muted-foreground mt-1">Authenticate into the ACID-guaranteed ledger domain.
+                    </p>
                 </div>
 
-                <!-- One-Click Preset Switcher -->
-                <label
-                    class="block text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-2 font-mono">Quick
-                    Preset Identities</label>
-                <div class="grid grid-cols-2 gap-2 mb-6">
-                    <button type="button" onclick="prefill('alpha@ledgerline.internal', 'Password@123')"
-                        class="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-xs font-semibold border border-slate-800 transition">
-                        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-                        <span class="truncate">User Alpha</span>
-                    </button>
-                    <button type="button" onclick="prefill('beta@ledgerline.internal', 'Password@123')"
-                        class="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-xs font-semibold border border-slate-800 transition">
-                        <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-                        <span class="truncate">User Beta</span>
-                    </button>
-                    <button type="button" onclick="prefill('admin@ledgerline.internal', 'Password@123')"
-                        class="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-purple-950/30 hover:bg-purple-900/40 text-purple-200 text-xs font-semibold border border-purple-800/40 transition">
-                        <span class="w-2 h-2 rounded-full bg-purple-400"></span>
-                        <span class="truncate">Admin Root</span>
-                    </button>
-                    <button type="button" onclick="prefill('auditor@ledgerline.internal', 'Password@123')"
-                        class="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-amber-950/30 hover:bg-amber-900/40 text-amber-200 text-xs font-semibold border border-amber-800/40 transition">
-                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                        <span class="truncate">Chief Auditor</span>
-                    </button>
+                <div class="space-y-2 mb-6">
+                    <span class="text-[11px] font-mono font-medium text-muted-foreground uppercase tracking-wider">Demo
+                        Presets</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="prefill('alpha@ledgerline.internal', 'Password@123')"
+                            class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
+                            <span>User Alpha</span>
+                            <span class="text-[10px] font-mono text-muted-foreground">₹1,000</span>
+                        </button>
+                        <button type="button" onclick="prefill('beta@ledgerline.internal', 'Password@123')"
+                            class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
+                            <span>User Beta</span>
+                            <span class="text-[10px] font-mono text-muted-foreground">₹500</span>
+                        </button>
+                        <button type="button" onclick="prefill('admin@ledgerline.internal', 'Password@123')"
+                            class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
+                            <span>Admin Root</span>
+                            <span class="text-[10px] font-mono text-purple-400">ADMIN</span>
+                        </button>
+                        <button type="button" onclick="prefill('auditor@ledgerline.internal', 'Password@123')"
+                            class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
+                            <span>Auditor</span>
+                            <span class="text-[10px] font-mono text-amber-400">READONLY</span>
+                        </button>
+                    </div>
                 </div>
 
                 <form id="loginForm" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">User Email</label>
-                        <div class="relative">
-                            <i class="fa-regular fa-envelope absolute left-3.5 top-3 text-slate-500 text-xs"></i>
-                            <input type="email" id="loginEmail" required
-                                class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition"
-                                placeholder="name@ledgerline.internal" />
-                        </div>
+                        <label class="block text-xs font-medium mb-1.5">Email</label>
+                        <input type="email" id="loginEmail" required
+                            class="w-full bg-black border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 font-mono transition"
+                            placeholder="alpha@ledgerline.internal" />
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Passphrase</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-500 text-xs"></i>
-                            <input type="password" id="loginPassword" required
-                                class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition"
-                                placeholder="••••••••••••" />
-                        </div>
+                        <label class="block text-xs font-medium mb-1.5">Password</label>
+                        <input type="password" id="loginPassword" required
+                            class="w-full bg-black border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 font-mono transition"
+                            placeholder="••••••••••••" />
                     </div>
                     <button type="submit"
-                        class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold rounded-xl text-xs tracking-wide uppercase shadow-lg shadow-emerald-500/20 transition duration-150">
-                        Authenticate Session
+                        class="w-full py-2 bg-white hover:bg-zinc-200 text-black font-semibold rounded-md text-xs transition">
+                        Sign In
                     </button>
                 </form>
             </div>
         </div>
 
         <!-- 2. AUTHENTICATED DASHBOARD -->
-        <div id="dashboardSection" class="hidden space-y-6">
+        <div id="dashboardSection" class="hidden flex-1 flex flex-col space-y-6">
 
-            <!-- Executive Metric Ribbon -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-                <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
-                    <div
-                        class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg">
-                        <i class="fa-solid fa-wallet"></i>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">Settled Balance</p>
-                        <p id="cardBalance" class="text-2xl font-bold tracking-tight text-emerald-400 font-mono mt-0.5">
-                            ₹0.00</p>
-                    </div>
+            <!-- Metrics with Scramble Balance -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-spring-drop">
+                <div class="shadcn-card p-4 rounded-lg">
+                    <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Settled
+                        Balance</p>
+                    <p id="cardBalance" class="text-2xl font-bold tracking-tight text-white font-mono mt-1">₹0.00</p>
                 </div>
-
-                <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
-                    <div
-                        class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-lg">
-                        <i class="fa-regular fa-credit-card"></i>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">Active Account</p>
-                        <p id="cardAccount" class="text-base font-bold font-mono text-white mt-0.5">-</p>
-                    </div>
+                <div class="shadcn-card p-4 rounded-lg">
+                    <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Active
+                        Account</p>
+                    <p id="cardAccount" class="text-sm font-semibold font-mono text-white mt-1">-</p>
                 </div>
-
-                <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
-                    <div
-                        class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-lg">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">Authorization Role
-                        </p>
-                        <p id="cardRole" class="text-base font-bold text-slate-200 mt-0.5">-</p>
-                    </div>
+                <div class="shadcn-card p-4 rounded-lg">
+                    <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Security
+                        Role</p>
+                    <p id="cardRole" class="text-sm font-semibold text-white mt-1">-</p>
                 </div>
-
-                <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
-                    <div
-                        class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-lg">
-                        <i class="fa-solid fa-lock"></i>
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">Invariant Barrier
-                        </p>
-                        <p class="text-xs font-mono font-bold text-slate-300 mt-1">CHECK (balance &ge; 0)</p>
-                    </div>
+                <div class="shadcn-card p-4 rounded-lg">
+                    <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Core
+                        Invariant</p>
+                    <p class="text-xs font-mono font-medium text-emerald-400 mt-1">CHECK(balance &ge; 0)</p>
                 </div>
-
             </div>
 
-            <!-- Main Operational Area (2 Column Split) -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Action & Stream Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-[520px]">
 
-                <!-- Column 1: Financial Movement Controls (4 cols) -->
-                <div class="lg:col-span-4 space-y-6">
-
-                    <!-- Transfer Card -->
-                    <div class="glass-card p-6 rounded-3xl shadow-xl">
-                        <div class="flex items-center space-x-2.5 mb-1">
-                            <i class="fa-solid fa-arrow-right-arrow-left text-emerald-400 text-sm"></i>
-                            <h3 class="text-base font-bold text-white tracking-tight">Move Money</h3>
+                <!-- Left Operations Form (4 cols) -->
+                <div class="lg:col-span-4 space-y-4 flex flex-col">
+                    <div class="shadcn-card p-5 rounded-lg flex-1">
+                        <div class="mb-4">
+                            <h3 class="text-sm font-semibold text-white">Execute Transfer</h3>
+                            <p class="text-xs text-muted-foreground mt-0.5">ACID transaction with deterministic row
+                                locks.</p>
                         </div>
-                        <p class="text-[11px] text-slate-400 mb-5">Pessimistic row-locked transfer with idempotent
-                            de-duplication.</p>
 
-                        <form id="transferForm" class="space-y-4">
+                        <form id="transferForm" class="space-y-3.5">
                             <div>
-                                <label
-                                    class="block text-[11px] uppercase tracking-wider font-mono font-semibold text-slate-400 mb-1">Source
+                                <label class="block text-[11px] font-mono text-muted-foreground mb-1">Source
                                     Account</label>
                                 <input type="text" id="sourceAccInput" readonly
-                                    class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-3.5 py-2.5 text-xs text-slate-300 font-mono focus:outline-none cursor-not-allowed" />
+                                    class="w-full bg-zinc-950 border border-border rounded-md px-3 py-2 text-xs text-zinc-400 font-mono cursor-not-allowed" />
                             </div>
                             <div>
-                                <label
-                                    class="block text-[11px] uppercase tracking-wider font-mono font-semibold text-slate-400 mb-1">Destination
+                                <label class="block text-[11px] font-mono text-muted-foreground mb-1">Destination
                                     Account</label>
                                 <input type="text" id="destAccInput" placeholder="ACC-BETA-200" required
-                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition" />
+                                    class="w-full bg-black border border-border rounded-md px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400 transition" />
                             </div>
                             <div>
-                                <label
-                                    class="block text-[11px] uppercase tracking-wider font-mono font-semibold text-slate-400 mb-1">Transfer
-                                    Amount (₹)</label>
+                                <label class="block text-[11px] font-mono text-muted-foreground mb-1">Amount (₹)</label>
                                 <div class="relative">
-                                    <span
-                                        class="absolute left-3.5 top-2.5 text-slate-500 text-xs font-mono font-bold">₹</span>
+                                    <span class="absolute left-3 top-2 text-xs font-mono text-muted-foreground">₹</span>
                                     <input type="number" step="0.01" min="0.01" id="transferAmount" placeholder="100.00"
                                         required
-                                        class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3.5 py-2.5 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition" />
+                                        class="w-full bg-black border border-border rounded-md pl-7 pr-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400 transition" />
                                 </div>
                             </div>
                             <button type="submit" id="btnExecuteTransfer"
-                                class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wide shadow-md transition">
+                                class="w-full py-2 bg-white hover:bg-zinc-200 text-black font-semibold rounded-md text-xs transition">
                                 Submit Atomic Transfer
                             </button>
                         </form>
 
-                        <!-- Attack Simulator Widget -->
-                        <div class="mt-6 pt-5 border-t border-slate-800/80">
+                        <!-- Concurrency Tester -->
+                        <div class="mt-6 pt-5 border-t border-border">
                             <div class="flex items-center justify-between mb-2">
-                                <span
-                                    class="text-[11px] uppercase font-mono font-bold text-rose-400 tracking-wider">Attack
-                                    Lab</span>
-                                <span class="text-[10px] font-mono text-slate-500">PROMISE.ALL()</span>
+                                <span class="text-[11px] font-mono font-medium text-rose-400">RACE ATTACK LAB</span>
+                                <span class="text-[10px] font-mono text-muted-foreground">CONCURRENCY</span>
                             </div>
-                            <button onclick="simulateRaceCondition()"
-                                class="w-full py-2.5 px-3 bg-rose-950/30 hover:bg-rose-900/40 border border-rose-800/40 text-rose-300 font-mono font-semibold rounded-xl text-[11px] flex items-center justify-center space-x-2 transition">
-                                <i class="fa-solid fa-bolt text-rose-400"></i>
+                            <button type="button" onclick="simulateRaceCondition()"
+                                class="w-full py-2 px-3 bg-red-950/20 hover:bg-red-900/30 border border-red-900/40 text-red-300 font-mono font-medium rounded-md text-xs flex items-center justify-center space-x-2 transition">
+                                <i class="fa-solid fa-bolt text-[11px]"></i>
                                 <span>Simulate 2x ₹800 Parallel Debits</span>
                             </button>
-                            <p class="text-[10px] text-slate-500 mt-2 text-center">Demonstrates zero double-spending
-                                under concurrent race conditions.</p>
+                            <p class="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+                                Dispatches simultaneous HTTP requests via Promise.all(). Demonstrates zero double-spend
+                                and zero balance overdrafts.
+                            </p>
                         </div>
                     </div>
-
                 </div>
 
-                <!-- Column 2: Verifiable Ledger & Statement Table (8 cols) -->
-                <div class="lg:col-span-8 space-y-6">
+                <!-- Right Stream / Scroller Viewport (8 cols) -->
+                <div class="lg:col-span-8 flex flex-col min-h-[500px]">
 
-                    <div class="glass-card rounded-3xl p-6 shadow-xl flex flex-col min-h-[500px]">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                            <div>
-                                <div class="flex items-center space-x-2">
-                                    <h3 class="text-base font-bold text-white tracking-tight">Audit Ledger Journal</h3>
-                                    <span
-                                        class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Append-Only</span>
-                                </div>
-                                <p class="text-[11px] text-slate-400 mt-0.5">Cryptographically sequenced, immutable
-                                    record of approvals and refusals.</p>
+                    <div
+                        class="shadcn-card rounded-lg flex flex-col flex-1 relative overflow-hidden border border-border">
+
+                        <div class="px-5 py-3 border-b border-border flex items-center justify-between bg-muted/40">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-semibold text-white">Audit Journal Feed</span>
+                                <span
+                                    class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-border">Append-Only</span>
                             </div>
                             <button onclick="refreshStatement()"
-                                class="self-start sm:self-auto px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 flex items-center space-x-1.5 transition">
-                                <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
-                                <span>Sync Journal</span>
+                                class="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-md text-xs font-mono flex items-center space-x-1.5 border border-border transition">
+                                <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
+                                <span>Sync</span>
                             </button>
                         </div>
 
-                        <!-- Ledger Table -->
-                        <div class="overflow-x-auto flex-1">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr
-                                        class="border-b border-slate-800/80 text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-950/40">
-                                        <th class="py-3 px-3.5">Timestamp</th>
-                                        <th class="py-3 px-3.5">Type</th>
-                                        <th class="py-3 px-3.5">Status</th>
-                                        <th class="py-3 px-3.5">Direction</th>
-                                        <th class="py-3 px-3.5">Amount</th>
-                                        <th class="py-3 px-3.5">Post Balance</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="statementTableBody" class="divide-y divide-slate-800/50 font-mono text-xs">
-                                    <!-- Dynamically Rendered -->
-                                </tbody>
-                            </table>
+                        <!-- Scrollable Viewport with Jump to Latest -->
+                        <div id="journalViewport" class="flex-1 overflow-y-auto p-4 space-y-3 relative">
+                            <div id="journalFeedContainer" class="flex flex-col gap-2.5">
+                                <!-- Dynamically rendered rows -->
+                            </div>
                         </div>
+
+                        <!-- Floating Jump To Latest Button (Shadcn MessageScroller pattern) -->
+                        <button id="btnScrollToLatest" onclick="scrollToLatest()"
+                            class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-20 rounded-full border border-border bg-zinc-900/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-white shadow-lg hover:bg-zinc-800 flex items-center space-x-1.5 transition">
+                            <i class="fa-solid fa-arrow-down text-[10px]"></i>
+                            <span>Jump to latest</span>
+                        </button>
+
                     </div>
 
                 </div>
@@ -340,9 +326,9 @@
 
     </main>
 
-    <!-- Interactive Toast Notification -->
+    <!-- Animated Spring Toast Notification -->
     <div id="toast"
-        class="fixed bottom-6 right-6 hidden max-w-sm px-4 py-3 rounded-2xl shadow-2xl text-xs font-semibold z-50 transition-all flex items-center space-x-3">
+        class="fixed bottom-5 right-5 hidden px-4 py-2.5 rounded-lg shadow-2xl text-xs font-medium z-50 transition-all border animate-spring-pop">
     </div>
 
     <script src="/app.js"></script>

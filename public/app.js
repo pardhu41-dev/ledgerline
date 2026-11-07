@@ -2,23 +2,81 @@ let currentUser = null;
 let currentToken = localStorage.getItem('token');
 let currentAccount = null;
 
-// DOM references
+// DOM Elements
 const loginSection = document.getElementById('loginSection');
 const dashboardSection = document.getElementById('dashboardSection');
 const authHeaderState = document.getElementById('authHeaderState');
 const loginForm = document.getElementById('loginForm');
 const transferForm = document.getElementById('transferForm');
 const toastEl = document.getElementById('toast');
+const journalViewport = document.getElementById('journalViewport');
+const journalFeedContainer = document.getElementById('journalFeedContainer');
+const btnScrollToLatest = document.getElementById('btnScrollToLatest');
+const cardBalanceEl = document.getElementById('cardBalance');
+
+// Character scramble effect matching animejs scrambleText() behavior
+function scrambleAnimate(element, targetText, duration = 600) {
+    const chars = '!<>-_\\/[]{}—=+*^?#________0123456789';
+    const start = performance.now();
+    const originalLength = targetText.length;
+
+    function update(time) {
+        const elapsed = time - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const revealedLength = Math.floor(progress * originalLength);
+
+        let output = '';
+        for (let i = 0; i < originalLength; i++) {
+            if (i < revealedLength) {
+                output += targetText[i];
+            } else {
+                output += chars[Math.floor(Math.random() * chars.length)];
+            }
+        }
+
+        element.textContent = output;
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        } else {
+            element.textContent = targetText;
+        }
+    }
+
+    requestAnimationFrame(update);
+}
+
+// Scroll detection for "Jump to latest" button
+if (journalViewport) {
+    journalViewport.addEventListener('scroll', () => {
+        const isAtBottom = journalViewport.scrollHeight - journalViewport.scrollTop - journalViewport.clientHeight < 60;
+        if (isAtBottom) {
+            btnScrollToLatest.classList.add('hidden');
+        } else {
+            btnScrollToLatest.classList.remove('hidden');
+        }
+    });
+}
+
+function scrollToLatest() {
+    if (journalViewport) {
+        journalViewport.scrollTo({ top: journalViewport.scrollHeight, behavior: 'smooth' });
+    }
+}
 
 function showToast(msg, isError = false) {
     toastEl.innerHTML = `
-    <i class="fa-solid ${isError ? 'fa-triangle-exclamation text-rose-300' : 'fa-circle-check text-emerald-950'} text-sm"></i>
-    <span>${msg}</span>
+    <div class="flex items-center space-x-2">
+      <i class="fa-solid ${isError ? 'fa-circle-xmark text-red-400' : 'fa-circle-check text-emerald-400'} text-xs"></i>
+      <span>${msg}</span>
+    </div>
   `;
-    toastEl.className = `fixed bottom-6 right-6 px-4 py-3 rounded-2xl shadow-2xl text-xs font-semibold z-50 flex items-center space-x-2.5 transition-all ${isError ? 'bg-rose-500 text-white border border-rose-400/30' : 'bg-emerald-400 text-slate-950 border border-emerald-300/40'
+    toastEl.className = `fixed bottom-5 right-5 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-medium z-50 flex items-center transition-all animate-spring-pop ${isError
+            ? 'bg-zinc-950 text-red-300 border-red-900/50'
+            : 'bg-zinc-950 text-emerald-300 border-emerald-900/50'
         }`;
     toastEl.classList.remove('hidden');
-    setTimeout(() => toastEl.classList.add('hidden'), 4500);
+    setTimeout(() => toastEl.classList.add('hidden'), 4000);
 }
 
 function prefill(email, pass) {
@@ -69,17 +127,16 @@ async function initApp() {
 
     authHeaderState.innerHTML = `
     <div class="text-right">
-      <p class="text-xs font-bold text-white leading-tight">${currentUser.name}</p>
-      <span class="text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${currentUser.role}</span>
+      <p class="text-xs font-medium text-white leading-tight">${currentUser.name}</p>
+      <span class="text-[10px] font-mono text-muted-foreground uppercase">${currentUser.role}</span>
     </div>
-    <button onclick="logout()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-800 transition">
+    <button onclick="logout()" class="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-md text-xs font-mono border border-border transition">
       Sign Out
     </button>
   `;
 
     document.getElementById('cardRole').textContent = currentUser.role;
 
-    // Set default view based on persona
     if (currentUser.role === 'ADMIN' || currentUser.role === 'AUDITOR') {
         currentAccount = 'ACC-ALPHA-100';
         document.getElementById('sourceAccInput').value = 'ACC-ALPHA-100';
@@ -107,35 +164,55 @@ async function refreshStatement() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        document.getElementById('cardBalance').textContent = `₹${(data.currentBalance / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+        // Apply smooth character scramble to balance update
+        const formattedBalance = `₹${(data.currentBalance / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+        scrambleAnimate(cardBalanceEl, formattedBalance, 500);
 
-        const tbody = document.getElementById('statementTableBody');
-        tbody.innerHTML = '';
+        journalFeedContainer.innerHTML = '';
 
         if (data.entries.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500 font-sans">No journal entries recorded for this ledger account.</td></tr>`;
+            journalFeedContainer.innerHTML = `
+        <div class="p-8 text-center text-xs text-muted-foreground font-mono">
+          No audit entries recorded for this account.
+        </div>
+      `;
             return;
         }
 
-        data.entries.forEach(entry => {
+        // Chronological order: oldest to newest (newest at bottom)
+        const sorted = [...data.entries].reverse();
+
+        sorted.forEach((entry, idx) => {
             const isRefused = entry.status === 'REFUSED';
             const statusBadge = isRefused
-                ? `<span class="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold">REFUSED</span>`
-                : `<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">SETTLED</span>`;
+                ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-red-950/40 text-red-400 border border-red-900/50">REFUSED</span>`
+                : `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-950/40 text-emerald-400 border border-emerald-900/50">SETTLED</span>`;
 
             const time = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-slate-900/40 transition-colors';
-            tr.innerHTML = `
-        <td class="py-3 px-3.5 text-slate-400 text-[11px]">${time}</td>
-        <td class="py-3 px-3.5 font-bold text-white">${entry.type}</td>
-        <td class="py-3 px-3.5">${statusBadge}</td>
-        <td class="py-3 px-3.5 text-slate-300 text-[11px]">${entry.source_account || 'EXT'} &rarr; ${entry.destination_account || 'EXT'}</td>
-        <td class="py-3 px-3.5 font-bold ${isRefused ? 'text-slate-500 line-through' : 'text-slate-100'}">₹${(entry.amount / 100).toFixed(2)}</td>
-        <td class="py-3 px-3.5 text-emerald-400 font-semibold">${entry.source_balance_after !== null ? `₹${(entry.source_balance_after / 100).toFixed(2)}` : '-'}</td>
+
+            const card = document.createElement('div');
+            card.className = 'rounded-lg bg-muted border border-border p-3 text-xs transition hover:border-zinc-700 animate-spring-pop';
+            card.innerHTML = `
+        <div class="flex items-center justify-between mb-1.5">
+          <div class="flex items-center space-x-2">
+            <span class="font-mono text-zinc-400 text-[11px]">${time}</span>
+            <span class="font-semibold text-white">${entry.type}</span>
+            ${statusBadge}
+          </div>
+          <div class="text-right font-mono font-bold ${isRefused ? 'text-zinc-500 line-through' : 'text-white'}">
+            ₹${(entry.amount / 100).toFixed(2)}
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-muted-foreground font-mono pt-1.5 border-t border-zinc-800">
+          <span>Route: <span class="text-zinc-300">${entry.source_account || 'EXT'}</span> &rarr; <span class="text-zinc-300">${entry.destination_account || 'EXT'}</span></span>
+          <span>Post Balance: <span class="text-emerald-400 font-semibold">${entry.source_balance_after !== null ? `₹${(entry.source_balance_after / 100).toFixed(2)}` : '-'}</span></span>
+        </div>
+        ${entry.reason ? `<div class="mt-1 text-[10px] font-mono text-red-400">Reason: ${entry.reason}</div>` : ''}
       `;
-            tbody.appendChild(tr);
+            journalFeedContainer.appendChild(card);
         });
+
+        scrollToLatest();
 
     } catch (err) {
         showToast(err.message, true);
@@ -174,7 +251,7 @@ transferForm.addEventListener('submit', async (e) => {
 });
 
 async function simulateRaceCondition() {
-    showToast('Dispatching simultaneous race-condition transfer requests...');
+    showToast('Simulating parallel debits via Promise.all()...');
     const key1 = `race-ui-1-${Date.now()}`;
     const key2 = `race-ui-2-${Date.now()}`;
 
@@ -193,7 +270,7 @@ async function simulateRaceCondition() {
     });
 
     const [res1, res2] = await Promise.all([send(key1), send(key2)]);
-    showToast(`Simulated: Request 1 (${res1.status}), Request 2 (${res2.status})`);
+    showToast(`Simulated: Req 1 (${res1.status}), Req 2 (${res2.status})`);
     await refreshStatement();
 }
 
