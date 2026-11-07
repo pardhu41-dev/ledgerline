@@ -1,175 +1,337 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-950">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LedgerLine — Verifiable Financial Engine</title>
+    <title>LedgerLine — Verifiable Institutional Financial Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            500: '#10b981',
+                            600: '#059669',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 9999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.6) 100%);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+    </style>
 </head>
 
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+<body
+    class="h-full text-slate-100 flex flex-col font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-300">
 
-    <!-- Header -->
-    <header class="border-b border-slate-800 bg-slate-950/70 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <!-- Top Institutional Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+
+            <!-- Brand Logo -->
             <div class="flex items-center space-x-3">
                 <div
-                    class="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-xl">
-                    <i class="fa-solid fa-vault"></i>
+                    class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/20">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <i class="fa-solid fa-layer-group text-emerald-400 text-sm"></i>
+                    </div>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white">LedgerLine</h1>
-                    <p class="text-xs text-slate-400">Verifiable Money Movement & Audit Ledger</p>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-base font-bold tracking-tight text-white">LedgerLine</span>
+                        <span
+                            class="text-[10px] tracking-widest font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase">ACID
+                            Core</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 font-medium">Verifiable Double-Entry Concurrency Engine</p>
                 </div>
             </div>
-            <div id="authHeaderState" class="flex items-center space-x-3"></div>
+
+            <!-- Engine Live Health Badge & Auth Controls -->
+            <div class="flex items-center space-x-3">
+                <div
+                    class="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>POSTGRES NEON : CONNECTED</span>
+                </div>
+                <div id="authHeaderState" class="flex items-center space-x-3"></div>
+            </div>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+    <!-- Main View Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
-        <!-- Login View (Shown when logged out) -->
-        <div id="loginSection"
-            class="max-w-md mx-auto mt-12 bg-slate-800/60 border border-slate-700/60 p-6 rounded-2xl shadow-xl">
-            <h2 class="text-2xl font-bold text-white mb-2">Sign In</h2>
-            <p class="text-sm text-slate-400 mb-6">Select a demo role or sign in with your credentials.</p>
+        <!-- 1. LOGIN SCREEN -->
+        <div id="loginSection" class="max-w-md mx-auto my-12 transition-all">
+            <div class="glass-card p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+                <div
+                    class="absolute -right-16 -top-16 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none">
+                </div>
 
-            <div class="grid grid-cols-2 gap-2 mb-6">
-                <button onclick="prefill('alpha@ledgerline.internal', 'Password@123')"
-                    class="px-3 py-2 bg-slate-700/60 hover:bg-slate-700 rounded-lg text-xs font-medium border border-slate-600/50">
-                    👤 User Alpha
-                </button>
-                <button onclick="prefill('beta@ledgerline.internal', 'Password@123')"
-                    class="px-3 py-2 bg-slate-700/60 hover:bg-slate-700 rounded-lg text-xs font-medium border border-slate-600/50">
-                    👤 User Beta
-                </button>
-                <button onclick="prefill('admin@ledgerline.internal', 'Password@123')"
-                    class="px-3 py-2 bg-purple-950/40 hover:bg-purple-900/40 text-purple-300 rounded-lg text-xs font-medium border border-purple-800/50">
-                    ⚡ System Admin
-                </button>
-                <button onclick="prefill('auditor@ledgerline.internal', 'Password@123')"
-                    class="px-3 py-2 bg-amber-950/40 hover:bg-amber-900/40 text-amber-300 rounded-lg text-xs font-medium border border-amber-800/50">
-                    🔍 Chief Auditor
-                </button>
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold tracking-tight text-white">System Access</h2>
+                    <p class="text-xs text-slate-400 mt-1">Authenticate into the ACID ledger engine boundary.</p>
+                </div>
+
+                <!-- One-Click Preset Switcher -->
+                <label
+                    class="block text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-2 font-mono">Quick
+                    Preset Identities</label>
+                <div class="grid grid-cols-2 gap-2 mb-6">
+                    <button type="button" onclick="prefill('alpha@ledgerline.internal', 'Password@123')"
+                        class="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-xs font-semibold border border-slate-800 transition">
+                        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                        <span class="truncate">User Alpha</span>
+                    </button>
+                    <button type="button" onclick="prefill('beta@ledgerline.internal', 'Password@123')"
+                        class="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-xs font-semibold border border-slate-800 transition">
+                        <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                        <span class="truncate">User Beta</span>
+                    </button>
+                    <button type="button" onclick="prefill('admin@ledgerline.internal', 'Password@123')"
+                        class="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-purple-950/30 hover:bg-purple-900/40 text-purple-200 text-xs font-semibold border border-purple-800/40 transition">
+                        <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                        <span class="truncate">Admin Root</span>
+                    </button>
+                    <button type="button" onclick="prefill('auditor@ledgerline.internal', 'Password@123')"
+                        class="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-amber-950/30 hover:bg-amber-900/40 text-amber-200 text-xs font-semibold border border-amber-800/40 transition">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span class="truncate">Chief Auditor</span>
+                    </button>
+                </div>
+
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">User Email</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-envelope absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                            <input type="email" id="loginEmail" required
+                                class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition"
+                                placeholder="name@ledgerline.internal" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Passphrase</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                            <input type="password" id="loginPassword" required
+                                class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition"
+                                placeholder="••••••••••••" />
+                        </div>
+                    </div>
+                    <button type="submit"
+                        class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold rounded-xl text-xs tracking-wide uppercase shadow-lg shadow-emerald-500/20 transition duration-150">
+                        Authenticate Session
+                    </button>
+                </form>
             </div>
-
-            <form id="loginForm" class="space-y-4">
-                <div>
-                    <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Email</label>
-                    <input type="email" id="loginEmail" required
-                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
-                </div>
-                <div>
-                    <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Password</label>
-                    <input type="password" id="loginPassword" required
-                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
-                </div>
-                <button type="submit"
-                    class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold rounded-lg text-sm transition">
-                    Sign In
-                </button>
-            </form>
         </div>
 
-        <!-- Authenticated App View -->
+        <!-- 2. AUTHENTICATED DASHBOARD -->
         <div id="dashboardSection" class="hidden space-y-6">
 
-            <!-- Top Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="statsGrid">
-                <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5">
-                    <p class="text-xs uppercase font-semibold text-slate-400">Active Account</p>
-                    <p id="cardAccount" class="text-lg font-mono font-bold text-white mt-1">-</p>
+            <!-- Executive Metric Ribbon -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">Settled Balance</p>
+                        <p id="cardBalance" class="text-2xl font-bold tracking-tight text-emerald-400 font-mono mt-0.5">
+                            ₹0.00</p>
+                    </div>
                 </div>
-                <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5">
-                    <p class="text-xs uppercase font-semibold text-slate-400">Current Balance</p>
-                    <p id="cardBalance" class="text-2xl font-bold text-emerald-400 mt-1">₹0.00</p>
+
+                <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-lg">
+                        <i class="fa-regular fa-credit-card"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">Active Account</p>
+                        <p id="cardAccount" class="text-base font-bold font-mono text-white mt-0.5">-</p>
+                    </div>
                 </div>
-                <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5">
-                    <p class="text-xs uppercase font-semibold text-slate-400">Role Boundary</p>
-                    <p id="cardRole" class="text-lg font-bold text-slate-200 mt-1">-</p>
+
+                <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">Authorization Role
+                        </p>
+                        <p id="cardRole" class="text-base font-bold text-slate-200 mt-0.5">-</p>
+                    </div>
                 </div>
+
+                <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-lg">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase text-slate-400 tracking-wider">Invariant Barrier
+                        </p>
+                        <p class="text-xs font-mono font-bold text-slate-300 mt-1">CHECK (balance &ge; 0)</p>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Action Panel: Transfer & Statement -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Operational Area (2 Column Split) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                <!-- Left: Action Form (Transfer / Deposit / Withdraw) -->
-                <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 h-fit" id="transferCard">
-                    <h3 class="text-lg font-bold text-white mb-1">Move Money</h3>
-                    <p class="text-xs text-slate-400 mb-4">Atomic, row-locked transfer with idempotency tracking.</p>
+                <!-- Column 1: Financial Movement Controls (4 cols) -->
+                <div class="lg:col-span-4 space-y-6">
 
-                    <form id="transferForm" class="space-y-4">
-                        <div>
-                            <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Source
-                                Account</label>
-                            <input type="text" id="sourceAccInput" required
-                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono" />
+                    <!-- Transfer Card -->
+                    <div class="glass-card p-6 rounded-3xl shadow-xl">
+                        <div class="flex items-center space-x-2.5 mb-1">
+                            <i class="fa-solid fa-arrow-right-arrow-left text-emerald-400 text-sm"></i>
+                            <h3 class="text-base font-bold text-white tracking-tight">Move Money</h3>
                         </div>
-                        <div>
-                            <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Destination
-                                Account</label>
-                            <input type="text" id="destAccInput" placeholder="ACC-BETA-200" required
-                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono" />
-                        </div>
-                        <div>
-                            <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Amount (in ₹
-                                Rupees)</label>
-                            <input type="number" step="0.01" min="0.01" id="transferAmount" placeholder="100.00"
-                                required
-                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono" />
-                        </div>
-                        <button type="submit" id="btnExecuteTransfer"
-                            class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold rounded-lg text-sm transition">
-                            Execute Transfer
-                        </button>
-                    </form>
+                        <p class="text-[11px] text-slate-400 mb-5">Pessimistic row-locked transfer with idempotent
+                            de-duplication.</p>
 
-                    <!-- Quick Test Attack Button -->
-                    <div class="mt-6 pt-6 border-t border-slate-700">
-                        <p class="text-xs text-slate-400 font-semibold uppercase mb-2">Simulate Concurrent Attack</p>
-                        <button onclick="simulateRaceCondition()"
-                            class="w-full py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-lg text-xs font-semibold transition">
-                            ⚡ Fire 2 Simultaneous ₹800 Debits
-                        </button>
+                        <form id="transferForm" class="space-y-4">
+                            <div>
+                                <label
+                                    class="block text-[11px] uppercase tracking-wider font-mono font-semibold text-slate-400 mb-1">Source
+                                    Account</label>
+                                <input type="text" id="sourceAccInput" readonly
+                                    class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-3.5 py-2.5 text-xs text-slate-300 font-mono focus:outline-none cursor-not-allowed" />
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-[11px] uppercase tracking-wider font-mono font-semibold text-slate-400 mb-1">Destination
+                                    Account</label>
+                                <input type="text" id="destAccInput" placeholder="ACC-BETA-200" required
+                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition" />
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-[11px] uppercase tracking-wider font-mono font-semibold text-slate-400 mb-1">Transfer
+                                    Amount (₹)</label>
+                                <div class="relative">
+                                    <span
+                                        class="absolute left-3.5 top-2.5 text-slate-500 text-xs font-mono font-bold">₹</span>
+                                    <input type="number" step="0.01" min="0.01" id="transferAmount" placeholder="100.00"
+                                        required
+                                        class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3.5 py-2.5 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition" />
+                                </div>
+                            </div>
+                            <button type="submit" id="btnExecuteTransfer"
+                                class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wide shadow-md transition">
+                                Submit Atomic Transfer
+                            </button>
+                        </form>
+
+                        <!-- Attack Simulator Widget -->
+                        <div class="mt-6 pt-5 border-t border-slate-800/80">
+                            <div class="flex items-center justify-between mb-2">
+                                <span
+                                    class="text-[11px] uppercase font-mono font-bold text-rose-400 tracking-wider">Attack
+                                    Lab</span>
+                                <span class="text-[10px] font-mono text-slate-500">PROMISE.ALL()</span>
+                            </div>
+                            <button onclick="simulateRaceCondition()"
+                                class="w-full py-2.5 px-3 bg-rose-950/30 hover:bg-rose-900/40 border border-rose-800/40 text-rose-300 font-mono font-semibold rounded-xl text-[11px] flex items-center justify-center space-x-2 transition">
+                                <i class="fa-solid fa-bolt text-rose-400"></i>
+                                <span>Simulate 2x ₹800 Parallel Debits</span>
+                            </button>
+                            <p class="text-[10px] text-slate-500 mt-2 text-center">Demonstrates zero double-spending
+                                under concurrent race conditions.</p>
+                        </div>
                     </div>
+
                 </div>
 
-                <!-- Right: Append-Only Verifiable Ledger Statement -->
-                <div class="lg:col-span-2 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h3 class="text-lg font-bold text-white">Verifiable Ledger Statement</h3>
-                            <p class="text-xs text-slate-400">Append-only audit trail: every debit, credit, and refused
-                                attempt.</p>
+                <!-- Column 2: Verifiable Ledger & Statement Table (8 cols) -->
+                <div class="lg:col-span-8 space-y-6">
+
+                    <div class="glass-card rounded-3xl p-6 shadow-xl flex flex-col min-h-[500px]">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="text-base font-bold text-white tracking-tight">Audit Ledger Journal</h3>
+                                    <span
+                                        class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Append-Only</span>
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Cryptographically sequenced, immutable
+                                    record of approvals and refusals.</p>
+                            </div>
+                            <button onclick="refreshStatement()"
+                                class="self-start sm:self-auto px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 flex items-center space-x-1.5 transition">
+                                <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
+                                <span>Sync Journal</span>
+                            </button>
                         </div>
-                        <button onclick="refreshStatement()"
-                            class="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition">
-                            <i class="fa-solid fa-rotate"></i>
-                        </button>
+
+                        <!-- Ledger Table -->
+                        <div class="overflow-x-auto flex-1">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="border-b border-slate-800/80 text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-950/40">
+                                        <th class="py-3 px-3.5">Timestamp</th>
+                                        <th class="py-3 px-3.5">Type</th>
+                                        <th class="py-3 px-3.5">Status</th>
+                                        <th class="py-3 px-3.5">Direction</th>
+                                        <th class="py-3 px-3.5">Amount</th>
+                                        <th class="py-3 px-3.5">Post Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statementTableBody" class="divide-y divide-slate-800/50 font-mono text-xs">
+                                    <!-- Dynamically Rendered -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
-                    <!-- Entries Table -->
-                    <div class="overflow-x-auto flex-1">
-                        <table class="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-700 text-slate-400 uppercase">
-                                    <th class="py-2.5 px-3">Timestamp</th>
-                                    <th class="py-2.5 px-3">Type</th>
-                                    <th class="py-2.5 px-3">Status</th>
-                                    <th class="py-2.5 px-3">Accounts</th>
-                                    <th class="py-2.5 px-3">Amount</th>
-                                    <th class="py-2.5 px-3">Initiated By</th>
-                                    <th class="py-2.5 px-3">Post Balance</th>
-                                </tr>
-                            </thead>
-                            <tbody id="statementTableBody" class="divide-y divide-slate-800 font-mono">
-                                <!-- Dynamically loaded -->
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
 
             </div>
@@ -178,9 +340,9 @@
 
     </main>
 
-    <!-- Notification Toast -->
+    <!-- Interactive Toast Notification -->
     <div id="toast"
-        class="fixed bottom-6 right-6 hidden px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold z-50 transition">
+        class="fixed bottom-6 right-6 hidden max-w-sm px-4 py-3 rounded-2xl shadow-2xl text-xs font-semibold z-50 transition-all flex items-center space-x-3">
     </div>
 
     <script src="/app.js"></script>
