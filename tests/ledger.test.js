@@ -3,6 +3,9 @@ const crypto = require('crypto');
 const app = require('../src/server');
 const db = require('../src/config/db');
 
+// Allow up to 30 seconds for cloud database network roundtrips
+jest.setTimeout(30000);
+
 let alphaToken = '';
 let betaToken = '';
 let alphaAcc = 'ACC-ALPHA-100';
@@ -24,7 +27,7 @@ beforeAll(async () => {
     // 3. Reset starting balances to known state (Alpha: ₹1000 = 100000 paise, Beta: ₹500 = 50000 paise)
     await db.query("UPDATE accounts SET balance = 100000 WHERE account_number = $1", [alphaAcc]);
     await db.query("UPDATE accounts SET balance = 50000 WHERE account_number = $1", [betaAcc]);
-});
+}, 30000);
 
 afterAll(async () => {
     await new Promise(resolve => setTimeout(resolve, 500));

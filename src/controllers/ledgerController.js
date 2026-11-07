@@ -151,6 +151,165 @@ exports.transfer = async (req, res) => {
   }
 };
 
+// Deposit (External money entering the system)
+exports.deposit = async (req, res) => {
+  const idempotencyKey = req.headers['idempotency-key'];
+  if (!idempotencyKey) {
+    return res.status(400).json({ error: 'Idempotency-Key header is required' });
+  }
+
+  const { accountNumber, amount } = req.body;
+  const parsedAmount = parseInt(amount, 10);
+
+  if (!accountNumber || isNaN(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ error: 'Valid account number and positive integer amount (in paise) required' });
+  }
+
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Idempotency check
+    const existingKey = await client.query('SELECT * FROM idempotency_keys WHERE key = $1::TEXT FOR UPDATE', [idempotencyKey]);
+    if (existingKey.rows.length > 0) {
+      const record = existingKey.rows[0];
+      await client.query('COMMIT');
+      return res.status(record.response_code || 200).json({
+        ...(typeof record.response_body === 'string' ? JSON.parse(record.response_body) : record.response_body),
+        _cached_idempotent_replay: true
+      });
+    }
+
+    await client.query('INSERT INTO idempotency_keys (key, user_id, status) VALUES ($1::TEXT, $2::UUID, $3::TEXT)', [idempotencyKey, req.user.id, 'PENDING']);
+
+    const accRes = await client.query('SELECT id, user_id, balance FROM accounts WHERE account_number = $1::TEXT FOR UPDATE', [accountNumber]);
+    if (accRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    const account = accRes.rows[0];
+    const newBalance = parseInt(account.balance, 10) + parsedAmount;
+
+    await client.query('UPDATE accounts SET balance = $1::BIGINT WHERE id = $2::UUID', [newBalance, account.id]);
+
+    const entry = await client.query(`
+      INSERT INTO ledger_entries (
+        idempotency_key, destination_account_id, amount,
+        type, status, reason, destination_balance_after, initiated_by
+      ) VALUES ($1::TEXT, $2::UUID, $3::BIGINT, 'DEPOSIT', 'SUCCESS', 'External deposit', $4::BIGINT, $5::UUID)
+      RETURNING id
+    `, [idempotencyKey, account.id, parsedAmount, newBalance, req.user.id]);
+
+    const response = {
+      message: 'Deposit successful',
+      depositId: entry.rows[0].id,
+      accountNumber,
+      amountDeposited: parsedAmount,
+      newBalance
+    };
+
+    await client.query('UPDATE idempotency_keys SET status = $1::TEXT, response_code = $2::INT, response_body = $3::JSONB WHERE key = $4::TEXT', ['PROCESSED', 200, JSON.stringify(response), idempotencyKey]);
+    await client.query('COMMIT');
+    return res.status(200).json(response);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    return res.status(500).json({ error: 'Deposit failed', details: err.message });
+  } finally {
+    client.release();
+  }
+};
+
+// Withdrawal (External money leaving the system)
+exports.withdraw = async (req, res) => {
+  const idempotencyKey = req.headers['idempotency-key'];
+  if (!idempotencyKey) {
+    return res.status(400).json({ error: 'Idempotency-Key header is required' });
+  }
+
+  const { accountNumber, amount } = req.body;
+  const parsedAmount = parseInt(amount, 10);
+
+  if (!accountNumber || isNaN(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ error: 'Valid account number and positive integer amount (in paise) required' });
+  }
+
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Idempotency check
+    const existingKey = await client.query('SELECT * FROM idempotency_keys WHERE key = $1::TEXT FOR UPDATE', [idempotencyKey]);
+    if (existingKey.rows.length > 0) {
+      const record = existingKey.rows[0];
+      await client.query('COMMIT');
+      return res.status(record.response_code || 200).json({
+        ...(typeof record.response_body === 'string' ? JSON.parse(record.response_body) : record.response_body),
+        _cached_idempotent_replay: true
+      });
+    }
+
+    await client.query('INSERT INTO idempotency_keys (key, user_id, status) VALUES ($1::TEXT, $2::UUID, $3::TEXT)', [idempotencyKey, req.user.id, 'PENDING']);
+
+    const accRes = await client.query('SELECT id, user_id, balance FROM accounts WHERE account_number = $1::TEXT FOR UPDATE', [accountNumber]);
+    if (accRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    const account = accRes.rows[0];
+
+    // Authorization: Account Holder can only withdraw from their own account
+    if (req.user.role === 'ACCOUNT_HOLDER' && account.user_id !== req.user.id) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Unauthorized: You do not own this account' });
+    }
+
+    const currentBalance = parseInt(account.balance, 10);
+    if (currentBalance < parsedAmount) {
+      await client.query(`
+        INSERT INTO ledger_entries (
+          idempotency_key, source_account_id, amount,
+          type, status, reason, source_balance_after, initiated_by
+        ) VALUES ($1::TEXT, $2::UUID, $3::BIGINT, 'WITHDRAWAL', 'REFUSED', 'Insufficient funds', $4::BIGINT, $5::UUID)
+      `, [idempotencyKey, account.id, parsedAmount, currentBalance, req.user.id]);
+
+      const response = { error: 'Insufficient funds for withdrawal' };
+      await client.query('UPDATE idempotency_keys SET status = $1::TEXT, response_code = $2::INT, response_body = $3::JSONB WHERE key = $4::TEXT', ['FAILED', 400, JSON.stringify(response), idempotencyKey]);
+      await client.query('COMMIT');
+      return res.status(400).json(response);
+    }
+
+    const newBalance = currentBalance - parsedAmount;
+    await client.query('UPDATE accounts SET balance = $1::BIGINT WHERE id = $2::UUID', [newBalance, account.id]);
+
+    const entry = await client.query(`
+      INSERT INTO ledger_entries (
+        idempotency_key, source_account_id, amount,
+        type, status, reason, source_balance_after, initiated_by
+      ) VALUES ($1::TEXT, $2::UUID, $3::BIGINT, 'WITHDRAWAL', 'SUCCESS', 'Withdrawal completed', $4::BIGINT, $5::UUID)
+      RETURNING id
+    `, [idempotencyKey, account.id, parsedAmount, newBalance, req.user.id]);
+
+    const response = {
+      message: 'Withdrawal successful',
+      withdrawalId: entry.rows[0].id,
+      accountNumber,
+      amountWithdrawn: parsedAmount,
+      newBalance
+    };
+
+    await client.query('UPDATE idempotency_keys SET status = $1::TEXT, response_code = $2::INT, response_body = $3::JSONB WHERE key = $4::TEXT', ['PROCESSED', 200, JSON.stringify(response), idempotencyKey]);
+    await client.query('COMMIT');
+    return res.status(200).json(response);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    return res.status(500).json({ error: 'Withdrawal failed', details: err.message });
+  } finally {
+    client.release();
+  }
+};
+
 exports.getStatement = async (req, res) => {
   const { accountNumber } = req.params;
 
