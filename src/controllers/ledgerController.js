@@ -21,30 +21,30 @@ exports.transfer = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Idempotency Check
+    // 1. Check idempotency record under lock
     const existingKey = await client.query(
-      'SELECT * FROM idempotency_keys WHERE key = $1 FOR UPDATE',
+      'SELECT * FROM idempotency_keys WHERE key = $1::TEXT FOR UPDATE',
       [idempotencyKey]
     );
 
     if (existingKey.rows.length > 0) {
       const record = existingKey.rows[0];
       await client.query('COMMIT');
-      return res.status(record.response_code).json({
-        ...record.response_body,
+      return res.status(record.response_code || 200).json({
+        ...(typeof record.response_body === 'string' ? JSON.parse(record.response_body) : record.response_body),
         _cached_idempotent_replay: true
       });
     }
 
-    // Register idempotency key as PENDING
+    // Insert pending idempotency key
     await client.query(
-      'INSERT INTO idempotency_keys (key, user_id, status) VALUES ($1, $2, $3)',
+      'INSERT INTO idempotency_keys (key, user_id, status) VALUES ($1::TEXT, $2::UUID, $3::TEXT)',
       [idempotencyKey, req.user.id, 'PENDING']
     );
 
     // 2. Fetch Accounts
     const accResult = await client.query(
-      'SELECT * FROM accounts WHERE account_number IN ($1, $2)',
+      'SELECT id, user_id, account_number, balance FROM accounts WHERE account_number IN ($1::TEXT, $2::TEXT)',
       [sourceAccountNumber, destinationAccountNumber]
     );
 
@@ -54,68 +54,74 @@ exports.transfer = async (req, res) => {
     if (!sourceAcc || !destAcc) {
       const response = { error: 'One or both accounts not found' };
       await client.query(
-        'UPDATE idempotency_keys SET status = $1, response_code = $2, response_body = $3 WHERE key = $4',
+        'UPDATE idempotency_keys SET status = $1::TEXT, response_code = $2::INT, response_body = $3::JSONB WHERE key = $4::TEXT',
         ['FAILED', 404, JSON.stringify(response), idempotencyKey]
       );
       await client.query('COMMIT');
       return res.status(404).json(response);
     }
 
-    // 3. Authorization Check: Account Holder can only debit their own accounts
+    // 3. Ownership Authorization check
     if (req.user.role === 'ACCOUNT_HOLDER' && sourceAcc.user_id !== req.user.id) {
       const response = { error: 'Unauthorized: You do not own the source account' };
       await client.query(
-        'UPDATE idempotency_keys SET status = $1, response_code = $2, response_body = $3 WHERE key = $4',
+        'UPDATE idempotency_keys SET status = $1::TEXT, response_code = $2::INT, response_body = $3::JSONB WHERE key = $4::TEXT',
         ['FAILED', 403, JSON.stringify(response), idempotencyKey]
       );
       await client.query('COMMIT');
       return res.status(403).json(response);
     }
 
-    // 4. Deadlock-Free Row-Level Locking (Order by UUID ascending)
-    const [firstId, secondId] = [sourceAcc.id, destAcc.id].sort();
-    await client.query('SELECT id FROM accounts WHERE id = $1 FOR UPDATE', [firstId]);
-    await client.query('SELECT id FROM accounts WHERE id = $2 FOR UPDATE', [secondId]);
+    // 4. Deadlock-free row-level locking (Sort by UUID ascending)
+    const sortedIds = [sourceAcc.id, destAcc.id].sort();
+    await client.query('SELECT id FROM accounts WHERE id = $1::UUID FOR UPDATE', [sortedIds[0]]);
+    await client.query('SELECT id FROM accounts WHERE id = $1::UUID FOR UPDATE', [sortedIds[1]]);
 
-    // Re-read source balance under lock
-    const lockedSource = await client.query('SELECT balance FROM accounts WHERE id = $1', [sourceAcc.id]);
-    const currentSourceBalance = parseInt(lockedSource.rows[0].balance, 10);
+    // Re-fetch current source balance under row lock
+    const lockedSourceRes = await client.query('SELECT balance FROM accounts WHERE id = $1::UUID', [sourceAcc.id]);
+    const currentSourceBalance = parseInt(lockedSourceRes.rows[0].balance, 10);
 
-    // 5. Balance Verification
+    // 5. Invariant check: No overdraft
     if (currentSourceBalance < parsedAmount) {
-      // Record refused attempt in append-only ledger
+      // Record refused attempt in audit ledger
       await client.query(`
         INSERT INTO ledger_entries (
           idempotency_key, source_account_id, destination_account_id, amount,
           type, status, reason, source_balance_after, destination_balance_after, initiated_by
-        ) VALUES ($1, $2, $3, $4, 'TRANSFER', 'REFUSED', 'Insufficient funds', $5, NULL, $6)
+        ) VALUES (
+          $1::TEXT, $2::UUID, $3::UUID, $4::BIGINT, 
+          'TRANSFER', 'REFUSED', 'Insufficient funds', $5::BIGINT, NULL::BIGINT, $6::UUID
+        )
       `, [idempotencyKey, sourceAcc.id, destAcc.id, parsedAmount, currentSourceBalance, req.user.id]);
 
       const response = { error: 'Insufficient funds for transfer' };
       await client.query(
-        'UPDATE idempotency_keys SET status = $1, response_code = $2, response_body = $3 WHERE key = $4',
+        'UPDATE idempotency_keys SET status = $1::TEXT, response_code = $2::INT, response_body = $3::JSONB WHERE key = $4::TEXT',
         ['FAILED', 400, JSON.stringify(response), idempotencyKey]
       );
       await client.query('COMMIT');
       return res.status(400).json(response);
     }
 
-    // 6. Execute Transfer
+    // 6. Update balances atomically
     const newSourceBalance = currentSourceBalance - parsedAmount;
-    await client.query('UPDATE accounts SET balance = $1 WHERE id = $2', [newSourceBalance, sourceAcc.id]);
+    await client.query('UPDATE accounts SET balance = $1::BIGINT WHERE id = $2::UUID', [newSourceBalance, sourceAcc.id]);
 
-    const lockedDest = await client.query('SELECT balance FROM accounts WHERE id = $1', [destAcc.id]);
-    const currentDestBalance = parseInt(lockedDest.rows[0].balance, 10);
+    const lockedDestRes = await client.query('SELECT balance FROM accounts WHERE id = $1::UUID', [destAcc.id]);
+    const currentDestBalance = parseInt(lockedDestRes.rows[0].balance, 10);
     const newDestBalance = currentDestBalance + parsedAmount;
-    await client.query('UPDATE accounts SET balance = $1 WHERE id = $2', [newDestBalance, destAcc.id]);
+    await client.query('UPDATE accounts SET balance = $1::BIGINT WHERE id = $2::UUID', [newDestBalance, destAcc.id]);
 
-    // 7. Write to Append-Only Ledger
+    // 7. Insert successful ledger entry
     const ledgerEntry = await client.query(`
       INSERT INTO ledger_entries (
         idempotency_key, source_account_id, destination_account_id, amount,
         type, status, reason, source_balance_after, destination_balance_after, initiated_by
-      ) VALUES ($1, $2, $3, $4, 'TRANSFER', 'SUCCESS', 'Transfer completed', $5, $6, $7)
-      RETURNING *
+      ) VALUES (
+        $1::TEXT, $2::UUID, $3::UUID, $4::BIGINT, 
+        'TRANSFER', 'SUCCESS', 'Transfer completed', $5::BIGINT, $6::BIGINT, $7::UUID
+      )
+      RETURNING id
     `, [idempotencyKey, sourceAcc.id, destAcc.id, parsedAmount, newSourceBalance, newDestBalance, req.user.id]);
 
     const response = {
@@ -127,35 +133,35 @@ exports.transfer = async (req, res) => {
       newSourceBalance
     };
 
-    // 8. Update Idempotency Table
+    // 8. Cache response in idempotency records
     await client.query(
-      'UPDATE idempotency_keys SET status = $1, response_code = $2, response_body = $3 WHERE key = $4',
+      'UPDATE idempotency_keys SET status = $1::TEXT, response_code = $2::INT, response_body = $3::JSONB WHERE key = $4::TEXT',
       ['PROCESSED', 200, JSON.stringify(response), idempotencyKey]
     );
 
     await client.query('COMMIT');
     return res.status(200).json(response);
+
   } catch (err) {
     await client.query('ROLLBACK');
+    console.error('Transfer execution error:', err.message);
     return res.status(500).json({ error: 'Transaction failed', details: err.message });
   } finally {
     client.release();
   }
 };
 
-// Statement Generation (Debits, credits, refused attempts, running balances)
 exports.getStatement = async (req, res) => {
   const { accountNumber } = req.params;
 
   try {
-    const accResult = await db.query('SELECT * FROM accounts WHERE account_number = $1', [accountNumber]);
+    const accResult = await db.query('SELECT * FROM accounts WHERE account_number = $1::TEXT', [accountNumber]);
     if (accResult.rows.length === 0) {
       return res.status(404).json({ error: 'Account not found' });
     }
 
     const account = accResult.rows[0];
 
-    // Authorization: Account Holder can only view their own account
     if (req.user.role === 'ACCOUNT_HOLDER' && account.user_id !== req.user.id) {
       return res.status(403).json({ error: 'Access denied to this account statement' });
     }
@@ -178,7 +184,7 @@ exports.getStatement = async (req, res) => {
       JOIN users u ON l.initiated_by = u.id
       LEFT JOIN accounts sa ON l.source_account_id = sa.id
       LEFT JOIN accounts da ON l.destination_account_id = da.id
-      WHERE l.source_account_id = $1 OR l.destination_account_id = $1
+      WHERE l.source_account_id = $1::UUID OR l.destination_account_id = $1::UUID
       ORDER BY l.created_at DESC;
     `;
 
@@ -194,7 +200,6 @@ exports.getStatement = async (req, res) => {
   }
 };
 
-// All accounts list (Admin & Auditor only)
 exports.getAllAccounts = async (req, res) => {
   try {
     const query = `
