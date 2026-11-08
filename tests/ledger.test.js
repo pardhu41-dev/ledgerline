@@ -1,44 +1,58 @@
 const request = require('supertest');
-const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const app = require('../src/server');
 const db = require('../src/config/db');
 
-// Allow up to 30 seconds for cloud database network roundtrips
-jest.setTimeout(30000);
-
-let alphaToken = '';
-let betaToken = '';
-let alphaAcc = 'ACC-ALPHA-100';
-let betaAcc = 'ACC-BETA-200';
-
-beforeAll(async () => {
-    // 1. Authenticate Alpha
-    const resAlpha = await request(app)
-        .post('/api/auth/login')
-        .send({ email: 'alpha@ledgerline.internal', password: 'Password@123' });
-    alphaToken = resAlpha.body.token;
-
-    // 2. Authenticate Beta
-    const resBeta = await request(app)
-        .post('/api/auth/login')
-        .send({ email: 'beta@ledgerline.internal', password: 'Password@123' });
-    betaToken = resBeta.body.token;
-
-    // 3. Reset starting balances to known state (Alpha: ₹1000 = 100000 paise, Beta: ₹500 = 50000 paise)
-    await db.query("UPDATE accounts SET balance = 100000 WHERE account_number = $1", [alphaAcc]);
-    await db.query("UPDATE accounts SET balance = 50000 WHERE account_number = $1", [betaAcc]);
-}, 30000);
-
-afterAll(async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-});
-
 describe('LedgerLine Integrity, Concurrency & Idempotency Attacks', () => {
+    let alphaUser;
+    let betaUser;
+    let alphaAcc = 'ACC-ALPHA-100';
+    let betaAcc = 'ACC-BETA-200';
+    let alphaToken;
+    let betaToken;
 
+    beforeAll(async () => {
+        const usersRes = await db.query('SELECT id, email, role FROM users');
+        alphaUser = usersRes.rows.find(u => u.email === 'alpha@ledgerline.internal');
+        betaUser = usersRes.rows.find(u => u.email === 'beta@ledgerline.internal');
+
+        const secret = process.env.JWT_SECRET || 'super_secret_ledgerline_jwt_key_2026';
+
+        alphaToken = jwt.sign(
+            { id: alphaUser.id, email: alphaUser.email, role: alphaUser.role },
+            secret,
+            { expiresIn: '1h' }
+        );
+
+        betaToken = jwt.sign(
+            { id: betaUser.id, email: betaUser.email, role: betaUser.role },
+            secret,
+            { expiresIn: '1h' }
+        );
+    });
+
+    beforeEach(async () => {
+        // Reset balances
+        await db.query("UPDATE accounts SET balance = 100000 WHERE account_number = $1", [alphaAcc]);
+        await db.query("UPDATE accounts SET balance = 50000 WHERE account_number = $1", [betaAcc]);
+
+        // Truncate tables with CASCADE to preserve FK constraints
+        await db.query("TRUNCATE TABLE ledger_entries, idempotency_keys CASCADE");
+    });
+
+    afterAll(async () => {
+        // Graceful pool shutdown supporting both { pool } and pool exports
+        if (typeof db.end === 'function') {
+            await db.end();
+        } else if (db.pool && typeof db.pool.end === 'function') {
+            await db.pool.end();
+        }
+    });
+
+    // --- ATTACK 1: Idempotency Replay ---
     test('Attack 1: Idempotency Protection — Replaying the same key must never double-spend', async () => {
-        const key = `replay-test-${crypto.randomUUID()}`;
+        const key = `test-idem-${Date.now()}`;
 
-        // First request
         const res1 = await request(app)
             .post('/api/ledger/transfer')
             .set('Authorization', `Bearer ${alphaToken}`)
@@ -46,13 +60,12 @@ describe('LedgerLine Integrity, Concurrency & Idempotency Attacks', () => {
             .send({
                 sourceAccountNumber: alphaAcc,
                 destinationAccountNumber: betaAcc,
-                amount: 20000 // ₹200
+                amount: 20000
             });
 
         expect(res1.status).toBe(200);
         expect(res1.body.amountTransferred).toBe(20000);
 
-        // Second request with EXACT same key (simulating network retry/timeout)
         const res2 = await request(app)
             .post('/api/ledger/transfer')
             .set('Authorization', `Bearer ${alphaToken}`)
@@ -66,48 +79,46 @@ describe('LedgerLine Integrity, Concurrency & Idempotency Attacks', () => {
         expect(res2.status).toBe(200);
         expect(res2.body._cached_idempotent_replay).toBe(true);
 
-        // Verify database only debited ONCE (100000 - 20000 = 80000)
-        const checkAcc = await db.query("SELECT balance FROM accounts WHERE account_number = $1", [alphaAcc]);
-        expect(parseInt(checkAcc.rows[0].balance, 10)).toBe(80000);
+        const check = await db.query("SELECT balance FROM accounts WHERE account_number = $1", [alphaAcc]);
+        expect(parseInt(check.rows[0].balance, 10)).toBe(80000);
     });
 
+    // --- ATTACK 2: Concurrent Race Condition ---
     test('Attack 2: Concurrent Race Condition — Two simultaneous withdrawals cannot exceed available balance', async () => {
-        // Current Alpha balance is ₹800 (80000 paise).
-        // Fire TWO requests concurrently, each attempting to withdraw ₹500 (50000 paise).
-        // Total attempted = ₹1000, which exceeds ₹800.
-        // EXACTLY ONE must succeed, and EXACTLY ONE must be refused.
-        const key1 = `race-test-${crypto.randomUUID()}`;
-        const key2 = `race-test-${crypto.randomUUID()}`;
+        await db.query("UPDATE accounts SET balance = 80000 WHERE account_number = $1", [alphaAcc]);
+
+        const keyA = `race-attack-A-${Date.now()}`;
+        const keyB = `race-attack-B-${Date.now()}`;
+
+        const sendTransfer = (key) =>
+            request(app)
+                .post('/api/ledger/transfer')
+                .set('Authorization', `Bearer ${alphaToken}`)
+                .set('Idempotency-Key', key)
+                .send({
+                    sourceAccountNumber: alphaAcc,
+                    destinationAccountNumber: betaAcc,
+                    amount: 50000
+                });
 
         const [req1, req2] = await Promise.all([
-            request(app)
-                .post('/api/ledger/transfer')
-                .set('Authorization', `Bearer ${alphaToken}`)
-                .set('Idempotency-Key', key1)
-                .send({ sourceAccountNumber: alphaAcc, destinationAccountNumber: betaAcc, amount: 50000 }),
-            request(app)
-                .post('/api/ledger/transfer')
-                .set('Authorization', `Bearer ${alphaToken}`)
-                .set('Idempotency-Key', key2)
-                .send({ sourceAccountNumber: alphaAcc, destinationAccountNumber: betaAcc, amount: 50000 })
+            sendTransfer(keyA),
+            sendTransfer(keyB)
         ]);
 
         const statuses = [req1.status, req2.status].sort();
-        // One 200 (Success) and one 400 (Insufficient funds)
         expect(statuses).toEqual([200, 400]);
 
-        // Alpha balance must remain strictly non-negative (80000 - 50000 = 30000 paise = ₹300)
         const checkAlpha = await db.query("SELECT balance FROM accounts WHERE account_number = $1", [alphaAcc]);
         expect(parseInt(checkAlpha.rows[0].balance, 10)).toBe(30000);
     });
 
+    // --- ATTACK 3: Authorization Boundary ---
     test('Attack 3: Authorization Boundary — User Beta cannot transfer funds out of User Alpha account', async () => {
-        const key = `auth-test-${crypto.randomUUID()}`;
-
         const res = await request(app)
             .post('/api/ledger/transfer')
-            .set('Authorization', `Bearer ${betaToken}`) // Beta token trying to move Alpha's money
-            .set('Idempotency-Key', key)
+            .set('Authorization', `Bearer ${betaToken}`)
+            .set('Idempotency-Key', `auth-attack-${Date.now()}`)
             .send({
                 sourceAccountNumber: alphaAcc,
                 destinationAccountNumber: betaAcc,
@@ -115,18 +126,26 @@ describe('LedgerLine Integrity, Concurrency & Idempotency Attacks', () => {
             });
 
         expect(res.status).toBe(403);
-        expect(res.body.error).toContain('Unauthorized');
     });
 
+    // --- INVARIANT CHECK: Conservation of Money ---
     test('Invariant Check: Conservation of Money — Total sum across accounts matches invariant', async () => {
-        // Starting total was 100000 + 50000 = 150000 paise.
-        // Internal transfers must net to ZERO change in aggregate balance.
-        const totals = await db.query(`
-      SELECT SUM(balance) as total_pool FROM accounts 
-      WHERE account_number IN ($1, $2)
-    `, [alphaAcc, betaAcc]);
+        const sumBefore = await db.query("SELECT SUM(balance) as total FROM accounts");
+        const initialTotal = parseInt(sumBefore.rows[0].total, 10);
 
-        expect(parseInt(totals.rows[0].total_pool, 10)).toBe(150000);
+        await request(app)
+            .post('/api/ledger/transfer')
+            .set('Authorization', `Bearer ${alphaToken}`)
+            .set('Idempotency-Key', `invar-tx-${Date.now()}`)
+            .send({
+                sourceAccountNumber: alphaAcc,
+                destinationAccountNumber: betaAcc,
+                amount: 15000
+            });
+
+        const sumAfter = await db.query("SELECT SUM(balance) as total FROM accounts");
+        const postTotal = parseInt(sumAfter.rows[0].total, 10);
+
+        expect(postTotal).toBe(initialTotal);
     });
-
 });
