@@ -1,454 +1,402 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-[#09090b] text-[#fafafa] antialiased">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LedgerLine — ACID Financial Engine</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Geist', 'sans-serif'],
-                        mono: ['Geist Mono', 'monospace'],
-                    },
-                    colors: {
-                        border: '#27272a',
-                        muted: '#18181b',
-                        'muted-foreground': '#a1a1aa',
-                    }
-                }
-            }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LedgerLine — Verifiable Institutional Financial Engine</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'sans-serif'],
+            mono: ['Geist Mono', 'monospace'],
+          },
+          colors: {
+            border: '#27272a',
+            input: '#27272a',
+            ring: '#d4d4d8',
+            background: '#09090b',
+            foreground: '#fafafa',
+            primary: { DEFAULT: '#fafafa', foreground: '#18181b' },
+            secondary: { DEFAULT: '#27272a', foreground: '#fafafa' },
+            destructive: { DEFAULT: '#7f1d1d', foreground: '#fecaca' },
+            muted: { DEFAULT: '#18181b', foreground: '#a1a1aa' },
+          }
         }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
-    <style>
-        :root {
-            --hue-accent: #4ff0b7;
-            --spring-easing: linear(0, 0.0146, 0.0548, 0.1153, 0.1911, 0.2776, 0.3706, 0.4665, 0.562, 0.6545,
-                    0.7419, 0.8225, 0.8951, 0.9589, 1.0137, 1.0591, 1.0956, 1.1235, 1.1434, 1.156,
-                    1.1621, 1.1626, 1.1585, 1.1505, 1.1396, 1.1264, 1.1118, 1.0964, 1.0807, 1.0653,
-                    1.0505, 1.0367, 1.0241, 1.0128, 1.003, 0.9946, 0.9878, 0.9824, 0.9784, 0.9757,
-                    0.9741, 0.9734, 0.9737, 0.9746, 0.9761, 0.9781, 0.9803, 0.9828, 0.9853, 0.9878,
-                    0.9903, 0.9927, 0.9949, 0.9968, 0.9986, 1.0001, 1.0013, 1.0024, 1.0032, 1.0037,
-                    1.0041, 1.0043, 1.0043, 1.0042, 1.0041, 1.0038, 1.0034, 1.0031, 1.0026, 1.0022,
-                    1.0018, 1.0014, 1.001, 1.0007, 1.0004, 1.0001, 0.9999, 0.9997, 0.9996, 0.9994,
-                    0.9994, 0.9993, 0.9993, 0.9993, 0.9993, 0.9994, 0.9994, 0.9995, 0.9995, 0.9996,
-                    0.9997, 0.9997, 0.9998, 0.9999, 0.9999, 1, 1, 1, 1.0001, 1.0001, 1);
-        }
+  <style>
+    :root {
+      --hue-accent: #4ff0b7;
+      --spring-easing: linear(
+        0, 0.0146, 0.0548, 0.1153, 0.1911, 0.2776, 0.3706, 0.4665, 0.562, 0.6545, 
+        0.7419, 0.8225, 0.8951, 0.9589, 1.0137, 1.0591, 1.0956, 1.1235, 1.1434, 1.156, 
+        1.1621, 1.1626, 1.1585, 1.1505, 1.1396, 1.1264, 1.1118, 1.0964, 1.0807, 1.0653, 
+        1.0505, 1.0367, 1.0241, 1.0128, 1.003, 0.9946, 0.9878, 0.9824, 0.9784, 0.9757, 
+        0.9741, 0.9734, 0.9737, 0.9746, 0.9761, 0.9781, 0.9803, 0.9828, 0.9853, 0.9878, 
+        0.9903, 0.9927, 0.9949, 0.9968, 0.9986, 1.0001, 1.0013, 1.0024, 1.0032, 1.0037, 
+        1.0041, 1.0043, 1.0043, 1.0042, 1.0041, 1.0038, 1.0034, 1.0031, 1.0026, 1.0022, 
+        1.0018, 1.0014, 1.001, 1.0007, 1.0004, 1.0001, 0.9999, 0.9997, 0.9996, 0.9994, 
+        0.9994, 0.9993, 0.9993, 0.9993, 0.9993, 0.9994, 0.9994, 0.9995, 0.9995, 0.9996, 
+        0.9997, 0.9997, 0.9998, 0.9999, 0.9999, 1, 1, 1, 1.0001, 1.0001, 1
+      );
+    }
 
-        /* Spring-physics animations */
-        @keyframes springDrop {
-            from {
-                transform: translateY(-24px);
-                opacity: 0;
-            }
+    /* Spring-physics animations */
+    @keyframes springDrop {
+      from { transform: translateY(-28px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes springPop {
+      from { transform: scale(0.93); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .animate-spring-drop { animation: springDrop 0.85s var(--spring-easing) forwards; }
+    .animate-spring-pop { animation: springPop 0.75s var(--spring-easing) forwards; }
 
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
+    /* Motion Dots Wave */
+    @keyframes waveBounce {
+      0%, 100% { transform: translateY(0px); opacity: 0.35; }
+      50% { transform: translateY(-12px); opacity: 1; }
+    }
+    .wave-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--hue-accent);
+      animation: waveBounce 0.65s ease-in-out infinite;
+    }
+    .wave-dot:nth-child(1) { animation-delay: -0.3s; }
+    .wave-dot:nth-child(2) { animation-delay: -0.15s; }
+    .wave-dot:nth-child(3) { animation-delay: 0s; }
 
-        @keyframes springPop {
-            from {
-                transform: scale(0.94);
-                opacity: 0;
-            }
+    /* Anime.js Stagger Row Squares */
+    .square-row { display: flex; gap: 4px; align-items: center; }
+    .square-tick {
+      width: 6px;
+      height: 14px;
+      border-radius: 2px;
+      background-color: #27272a;
+      transition: background-color 0.2s, transform 0.2s;
+    }
+    .square-tick.active {
+      background-color: var(--hue-accent);
+      transform: scaleY(1.2);
+    }
 
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
+    /* Switch Component */
+    .switch-container {
+      width: 38px;
+      height: 20px;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      transition: background-color 0.25s ease, outline 0.15s ease;
+      background-color: #27272a;
+    }
+    .switch-container[data-is-on="true"] {
+      background-color: rgba(79, 240, 183, 0.3);
+    }
+    .switch-container:focus-visible { outline: 2px solid var(--hue-accent); }
+    .switch-handle {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: #71717a;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease;
+      transform: translateX(0px);
+    }
+    .switch-container[data-is-on="true"] .switch-handle {
+      transform: translateX(18px);
+      background-color: var(--hue-accent);
+    }
 
-        .animate-spring-drop {
-            animation: springDrop 0.9s var(--spring-easing) forwards;
-        }
+    /* shadcn Card & Scrollbar */
+    .shadcn-card {
+      background-color: #0c0a09;
+      border: 1px solid #27272a;
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
 
-        .animate-spring-pop {
-            animation: springPop 0.8s var(--spring-easing) forwards;
-        }
-
-        /* Motion Dots Wave */
-        @keyframes waveBounce {
-
-            0%,
-            100% {
-                transform: translateY(0px);
-                opacity: 0.4;
-            }
-
-            50% {
-                transform: translateY(-12px);
-                opacity: 1;
-            }
-        }
-
-        .wave-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background-color: var(--hue-accent);
-            animation: waveBounce 0.7s ease-in-out infinite;
-        }
-
-        .wave-dot:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-
-        .wave-dot:nth-child(2) {
-            animation-delay: -0.16s;
-        }
-
-        .wave-dot:nth-child(3) {
-            animation-delay: 0s;
-        }
-
-        /* Interactive Switch Component */
-        .switch-container {
-            width: 36px;
-            height: 20px;
-            border-radius: 9999px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            padding: 2px;
-            transition: background-color 0.25s ease, outline 0.15s ease;
-            background-color: #27272a;
-        }
-
-        .switch-container[data-is-on="true"] {
-            background-color: rgba(79, 240, 183, 0.25);
-        }
-
-        .switch-container:focus-visible {
-            outline: 2px solid var(--hue-accent);
-        }
-
-        .switch-handle {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background-color: #71717a;
-            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease;
-            transform: translateX(0px);
-        }
-
-        .switch-container[data-is-on="true"] .switch-handle {
-            transform: translateX(16px);
-            background-color: var(--hue-accent);
-        }
-
-        /* Motion Badge */
-        .motion-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 9999px;
-            background: #18181b;
-            border: 1px solid #27272a;
-            font-size: 11px;
-            font-family: 'Geist Mono', monospace;
-            color: #fafafa;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #27272a;
-            border-radius: 9999px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #3f3f46;
-        }
-
-        .shadcn-card {
-            background-color: #0c0a09;
-            border: 1px solid #27272a;
-        }
-    </style>
+    /* Text Splitter Styling */
+    .split-char {
+      display: inline-block;
+      transition: transform 0.3s var(--spring-easing), opacity 0.3s;
+    }
+  </style>
 </head>
-
 <body class="h-full flex flex-col font-sans selection:bg-zinc-800 selection:text-zinc-100">
 
-    <!-- Header -->
-    <header class="border-b border-border bg-[#09090b]/80 backdrop-blur sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div
-                    class="w-7 h-7 rounded-md bg-white flex items-center justify-center text-black font-semibold text-xs shadow-sm">
-                    <i class="fa-solid fa-cube text-[11px]"></i>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <span class="text-sm font-semibold tracking-tight text-white">LedgerLine</span>
-                    <span class="text-[11px] text-muted-foreground">/</span>
-                    <span class="text-[11px] font-mono text-emerald-400">ACID Core</span>
-                </div>
-            </div>
-
-            <div class="flex items-center space-x-3">
-                <!-- Animated Badge Container -->
-                <button id="badgeStatus" class="motion-badge hover:border-zinc-700 transition">
-                    <div class="icon-container flex items-center">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    </div>
-                    <div class="label-container flex items-center">
-                        <span id="badgeLabel" class="label">ENGINE READY</span>
-                    </div>
-                </button>
-                <div id="authHeaderState" class="flex items-center space-x-2"></div>
-            </div>
+  <!-- Top Navigation -->
+  <header class="border-b border-border bg-[#09090b]/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      
+      <!-- Brand & Splitter Hook -->
+      <div class="flex items-center space-x-3">
+        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center text-black font-semibold text-xs shadow-sm">
+          <i data-lucide="layers" class="w-4 h-4 text-black"></i>
         </div>
-    </header>
+        <div class="flex items-center space-x-2">
+          <span id="brandTitle" class="text-sm font-semibold tracking-tight text-white">LedgerLine</span>
+          <span class="text-[11px] text-muted-foreground">/</span>
+          <span class="text-[11px] font-mono text-emerald-400">ACID Core</span>
+        </div>
+      </div>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+      <!-- Right Controls & Status Badge -->
+      <div class="flex items-center space-x-3">
+        <!-- Interactive State Badge -->
+        <button id="badgeStatus" class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-muted border border-border text-[11px] font-mono text-zinc-300 hover:border-zinc-700 transition">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="badgeLabel" class="label">ENGINE READY</span>
+        </button>
+        <div id="authHeaderState" class="flex items-center space-x-2"></div>
+      </div>
+    </div>
+  </header>
 
-        <!-- 1. LOGIN SECTION -->
-        <div id="loginSection" class="max-w-md w-full mx-auto my-auto animate-spring-pop">
-            <div class="shadcn-card p-6 sm:p-8 rounded-xl shadow-2xl relative">
-                <div class="mb-6">
-                    <h2 class="text-xl font-semibold tracking-tight text-white">System Authentication</h2>
-                    <p class="text-xs text-muted-foreground mt-1">Sign in with an active account boundary.</p>
-                </div>
+  <!-- Alerts Banner Overlay (shadcn Alert component) -->
+  <div id="alertBannerContainer" class="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-4 hidden">
+    <div id="alertBanner" class="relative w-full rounded-lg border border-emerald-900/50 bg-emerald-950/20 p-4 text-emerald-300 flex items-start gap-3">
+      <i id="alertIcon" data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 mt-0.5 shrink-0"></i>
+      <div class="flex-1">
+        <h5 id="alertTitle" class="text-xs font-semibold leading-none tracking-tight text-white mb-1">Transaction Committed</h5>
+        <div id="alertDescription" class="text-xs text-muted-foreground font-mono">Row locks acquired and settled in PostgreSQL.</div>
+      </div>
+      <button onclick="dismissAlert()" class="text-zinc-500 hover:text-zinc-300 text-xs font-mono">✕</button>
+    </div>
+  </div>
 
-                <div class="space-y-2 mb-6">
-                    <span class="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">Demo
-                        Presets</span>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" onclick="prefill('alpha@ledgerline.internal', 'Password@123')"
-                            class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
-                            <span>User Alpha</span>
-                            <span class="text-[10px] font-mono text-muted-foreground">₹1000</span>
-                        </button>
-                        <button type="button" onclick="prefill('beta@ledgerline.internal', 'Password@123')"
-                            class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
-                            <span>User Beta</span>
-                            <span class="text-[10px] font-mono text-muted-foreground">₹500</span>
-                        </button>
-                        <button type="button" onclick="prefill('admin@ledgerline.internal', 'Password@123')"
-                            class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
-                            <span>System Admin</span>
-                            <span class="text-[10px] font-mono text-purple-400">ADMIN</span>
-                        </button>
-                        <button type="button" onclick="prefill('auditor@ledgerline.internal', 'Password@123')"
-                            class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
-                            <span>Chief Auditor</span>
-                            <span class="text-[10px] font-mono text-amber-400">AUDIT</span>
-                        </button>
-                    </div>
-                </div>
+  <!-- Main View Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
 
-                <form id="loginForm" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-medium text-foreground mb-1.5">Email</label>
-                        <input type="email" id="loginEmail" required
-                            class="w-full bg-black border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 font-mono transition"
-                            placeholder="alpha@ledgerline.internal" />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-foreground mb-1.5">Password</label>
-                        <input type="password" id="loginPassword" required
-                            class="w-full bg-black border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 font-mono transition"
-                            placeholder="••••••••••••" />
-                    </div>
-                    <button type="submit"
-                        class="w-full py-2 bg-white hover:bg-zinc-200 text-black font-semibold rounded-md text-xs transition">
-                        Continue
-                    </button>
-                </form>
-            </div>
+    <!-- 1. LOGIN SECTION (shadcn Card Spec) -->
+    <div id="loginSection" class="max-w-md w-full mx-auto my-auto animate-spring-pop">
+      <div class="shadcn-card rounded-xl shadow-2xl p-6 sm:p-8 relative">
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold tracking-tight text-white">System Access</h2>
+          <p class="text-xs text-muted-foreground mt-1">Authenticate into the ACID-guaranteed ledger domain.</p>
         </div>
 
-        <!-- 2. DASHBOARD SECTION -->
-        <div id="dashboardSection" class="hidden flex-1 flex flex-col space-y-6">
-
-            <!-- Metrics Ribbon with AnimateNumber + Motion Switch Controls -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-spring-drop">
-
-                <!-- Live Settled Balance Card with Switches -->
-                <div class="shadcn-card p-4 rounded-lg flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between">
-                            <span
-                                class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Settled
-                                Balance</span>
-                            <div id="balanceLoadingDots" class="hidden flex items-center space-x-1.5">
-                                <div class="wave-dot"></div>
-                                <div class="wave-dot"></div>
-                                <div class="wave-dot"></div>
-                            </div>
-                        </div>
-                        <!-- AnimateNumber Display Target -->
-                        <p id="cardBalance" class="text-2xl font-bold tracking-tight text-white font-mono mt-1">₹0.00
-                        </p>
-                    </div>
-
-                    <!-- Controls: Currency & Compact Mode Switches -->
-                    <div class="flex items-center gap-4 mt-3 pt-2.5 border-t border-border/80">
-                        <div class="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
-                            <span>Currency</span>
-                            <div id="switchCurrency" tabindex="0" class="switch-container" data-is-on="true">
-                                <div class="switch-handle"></div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
-                            <span>Compact</span>
-                            <div id="switchCompact" tabindex="0" class="switch-container" data-is-on="false">
-                                <div class="switch-handle"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="shadcn-card p-4 rounded-lg">
-                    <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Active
-                        Account</p>
-                    <p id="cardAccount" class="text-sm font-semibold font-mono text-white mt-1">-</p>
-                </div>
-
-                <div class="shadcn-card p-4 rounded-lg">
-                    <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Security
-                        Role</p>
-                    <p id="cardRole" class="text-sm font-semibold text-white mt-1">-</p>
-                </div>
-
-                <div class="shadcn-card p-4 rounded-lg">
-                    <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Storage
-                        Invariant</p>
-                    <p class="text-xs font-mono font-medium text-emerald-400 mt-1">CHECK(balance &ge; 0)</p>
-                </div>
-
-            </div>
-
-            <!-- Main Operational Area -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-[520px]">
-
-                <!-- Left Operations Form (4 cols) -->
-                <div class="lg:col-span-4 space-y-4 flex flex-col">
-                    <div class="shadcn-card p-5 rounded-lg flex-1">
-                        <div class="mb-4">
-                            <h3 class="text-sm font-semibold text-white">Execute Transfer</h3>
-                            <p class="text-xs text-muted-foreground mt-0.5">ACID transaction with deterministic row
-                                locks.</p>
-                        </div>
-
-                        <form id="transferForm" class="space-y-3.5">
-                            <div>
-                                <label class="block text-[11px] font-mono text-muted-foreground mb-1">Source
-                                    Account</label>
-                                <input type="text" id="sourceAccInput" readonly
-                                    class="w-full bg-zinc-950 border border-border rounded-md px-3 py-2 text-xs text-zinc-400 font-mono cursor-not-allowed" />
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-mono text-muted-foreground mb-1">Destination
-                                    Account</label>
-                                <input type="text" id="destAccInput" placeholder="ACC-BETA-200" required
-                                    class="w-full bg-black border border-border rounded-md px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400 transition" />
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-mono text-muted-foreground mb-1">Amount (₹)</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-2 text-xs font-mono text-muted-foreground">₹</span>
-                                    <input type="number" step="0.01" min="0.01" id="transferAmount" placeholder="100.00"
-                                        required
-                                        class="w-full bg-black border border-border rounded-md pl-7 pr-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400 transition" />
-                                </div>
-                            </div>
-                            <button type="submit" id="btnExecuteTransfer"
-                                class="w-full py-2 bg-white hover:bg-zinc-200 text-black font-semibold rounded-md text-xs transition">
-                                Submit Atomic Transfer
-                            </button>
-                        </form>
-
-                        <!-- Race Condition Lab -->
-                        <div class="mt-6 pt-5 border-t border-border">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-[11px] font-mono font-medium text-rose-400">RACE ATTACK LAB</span>
-                                <span class="text-[10px] font-mono text-muted-foreground">CONCURRENCY</span>
-                            </div>
-                            <button type="button" onclick="simulateRaceCondition()"
-                                class="w-full py-2 px-3 bg-red-950/20 hover:bg-red-900/30 border border-red-900/40 text-red-300 font-mono font-medium rounded-md text-xs flex items-center justify-center space-x-2 transition">
-                                <i class="fa-solid fa-bolt text-[11px]"></i>
-                                <span>Simulate 2x ₹800 Parallel Debits</span>
-                            </button>
-                            <p class="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-                                Fires simultaneous debits using Promise.all(). Demonstrates zero double-spend and zero
-                                balance overdrafts.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Stream / Scroller Viewport (8 cols) -->
-                <div class="lg:col-span-8 flex flex-col min-h-[500px]">
-
-                    <div
-                        class="shadcn-card rounded-lg flex flex-col flex-1 relative overflow-hidden border border-border">
-
-                        <div class="px-5 py-3 border-b border-border flex items-center justify-between bg-muted/40">
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-semibold text-white">Audit Journal Feed</span>
-                                <span
-                                    class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-border">Append-Only</span>
-                            </div>
-                            <button onclick="refreshStatement()"
-                                class="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-md text-xs font-mono flex items-center space-x-1.5 border border-border transition">
-                                <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
-                                <span>Sync</span>
-                            </button>
-                        </div>
-
-                        <!-- Scrollable Viewport -->
-                        <div id="journalViewport" class="flex-1 overflow-y-auto p-4 space-y-3 relative">
-                            <div id="journalFeedContainer" class="flex flex-col gap-2.5">
-                                <!-- Ledger items dynamically mounted -->
-                            </div>
-                        </div>
-
-                        <!-- Floating Jump To Latest Button -->
-                        <button id="btnScrollToLatest" onclick="scrollToLatest()"
-                            class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-20 rounded-full border border-border bg-zinc-900/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-white shadow-lg hover:bg-zinc-800 flex items-center space-x-1.5 transition">
-                            <i class="fa-solid fa-arrow-down text-[10px]"></i>
-                            <span>Jump to latest</span>
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
+        <!-- Presets Grid -->
+        <div class="space-y-2 mb-6">
+          <span class="text-[11px] font-mono font-medium text-muted-foreground uppercase tracking-wider">Demo Presets</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="prefill('alpha@ledgerline.internal', 'Password@123')" class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
+              <span>User Alpha</span>
+              <span class="text-[10px] font-mono text-muted-foreground">₹1,000</span>
+            </button>
+            <button type="button" onclick="prefill('beta@ledgerline.internal', 'Password@123')" class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
+              <span>User Beta</span>
+              <span class="text-[10px] font-mono text-muted-foreground">₹500</span>
+            </button>
+            <button type="button" onclick="prefill('admin@ledgerline.internal', 'Password@123')" class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
+              <span>Admin Root</span>
+              <span class="text-[10px] font-mono text-purple-400">ADMIN</span>
+            </button>
+            <button type="button" onclick="prefill('auditor@ledgerline.internal', 'Password@123')" class="flex items-center justify-between px-3 py-2 rounded-md bg-muted hover:bg-zinc-800 text-xs font-medium border border-border transition text-left">
+              <span>Auditor</span>
+              <span class="text-[10px] font-mono text-amber-400">READONLY</span>
+            </button>
+          </div>
         </div>
 
-    </main>
-
-    <div id="toast"
-        class="fixed bottom-5 right-5 hidden px-4 py-2.5 rounded-lg shadow-2xl text-xs font-medium z-50 transition-all border animate-spring-pop">
+        <form id="loginForm" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium mb-1.5">Email</label>
+            <input type="email" id="loginEmail" required class="w-full bg-black border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 font-mono transition" placeholder="alpha@ledgerline.internal" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1.5">Password</label>
+            <input type="password" id="loginPassword" required class="w-full bg-black border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 font-mono transition" placeholder="••••••••••••" />
+          </div>
+          <button type="submit" class="w-full py-2 bg-white hover:bg-zinc-200 text-black font-semibold rounded-md text-xs transition">
+            Continue
+          </button>
+        </form>
+      </div>
     </div>
 
-    <script src="/app.js"></script>
-</body>
+    <!-- 2. AUTHENTICATED DASHBOARD -->
+    <div id="dashboardSection" class="hidden flex-1 flex flex-col space-y-6">
 
+      <!-- Metrics with AnimateNumber + Spring Switches + Square Stagger Counters -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-spring-drop">
+        
+        <!-- Live Settled Balance Card with Controls -->
+        <div class="shadcn-card p-4 rounded-lg flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Settled Balance</span>
+              <div id="balanceLoadingDots" class="hidden flex items-center space-x-1.5">
+                <div class="wave-dot"></div>
+                <div class="wave-dot"></div>
+                <div class="wave-dot"></div>
+              </div>
+            </div>
+            <!-- AnimateNumber Display Target -->
+            <p id="cardBalance" class="text-2xl font-bold tracking-tight text-white font-mono mt-1">₹0.00</p>
+          </div>
+
+          <!-- Currency & Compact Motion Switches -->
+          <div class="flex items-center gap-4 mt-3 pt-2.5 border-t border-border/80">
+            <div class="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
+              <span>Currency</span>
+              <div id="switchCurrency" tabindex="0" class="switch-container" data-is-on="true">
+                <div class="switch-handle"></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
+              <span>Compact</span>
+              <div id="switchCompact" tabindex="0" class="switch-container" data-is-on="false">
+                <div class="switch-handle"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="shadcn-card p-4 rounded-lg">
+          <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Active Account</p>
+          <p id="cardAccount" class="text-sm font-semibold font-mono text-white mt-1">-</p>
+          <!-- Square Stagger Progress Indicator -->
+          <div class="square-row mt-3 pt-2 border-t border-border/60">
+            <div class="square-tick active"></div>
+            <div class="square-tick active"></div>
+            <div class="square-tick"></div>
+            <div class="square-tick"></div>
+          </div>
+        </div>
+
+        <div class="shadcn-card p-4 rounded-lg">
+          <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Security Role</p>
+          <p id="cardRole" class="text-sm font-semibold text-white mt-1">-</p>
+          <div class="text-[10px] font-mono text-muted-foreground mt-3 pt-2 border-t border-border/60">
+            JWT RBAC VERIFIED
+          </div>
+        </div>
+
+        <div class="shadcn-card p-4 rounded-lg">
+          <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider font-mono">Storage Invariant</p>
+          <p class="text-xs font-mono font-medium text-emerald-400 mt-1">CHECK(balance &ge; 0)</p>
+          <div class="text-[10px] font-mono text-muted-foreground mt-3 pt-2 border-t border-border/60">
+            POSTGRES ENGINE ATOMIC
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Main Operational Split -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-[520px]">
+
+        <!-- Left Operations Form (4 cols) -->
+        <div class="lg:col-span-4 space-y-4 flex flex-col">
+          <div class="shadcn-card p-5 rounded-lg flex-1">
+            <div class="mb-4">
+              <h3 class="text-sm font-semibold text-white">Execute Transfer</h3>
+              <p class="text-xs text-muted-foreground mt-0.5">ACID transaction with deterministic row locks.</p>
+            </div>
+
+            <form id="transferForm" class="space-y-3.5">
+              <div>
+                <label class="block text-[11px] font-mono text-muted-foreground mb-1">Source Account</label>
+                <input type="text" id="sourceAccInput" readonly class="w-full bg-zinc-950 border border-border rounded-md px-3 py-2 text-xs text-zinc-400 font-mono cursor-not-allowed" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-muted-foreground mb-1">Destination Account</label>
+                <input type="text" id="destAccInput" placeholder="ACC-BETA-200" required class="w-full bg-black border border-border rounded-md px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400 transition" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-muted-foreground mb-1">Amount (₹)</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-xs font-mono text-muted-foreground">₹</span>
+                  <input type="number" step="0.01" min="0.01" id="transferAmount" placeholder="100.00" required class="w-full bg-black border border-border rounded-md pl-7 pr-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400 transition" />
+                </div>
+              </div>
+              <button type="submit" id="btnExecuteTransfer" class="w-full py-2 bg-white hover:bg-zinc-200 text-black font-semibold rounded-md text-xs transition flex items-center justify-center space-x-1.5">
+                <span>Submit Atomic Transfer</span>
+                <i data-lucide="arrow-up" class="w-3.5 h-3.5"></i>
+              </button>
+            </form>
+
+            <!-- Concurrency Tester -->
+            <div class="mt-6 pt-5 border-t border-border">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-mono font-medium text-rose-400">RACE ATTACK LAB</span>
+                <span class="text-[10px] font-mono text-muted-foreground">CONCURRENCY</span>
+              </div>
+              <button type="button" onclick="simulateRaceCondition()" class="w-full py-2 px-3 bg-red-950/20 hover:bg-red-900/30 border border-red-900/40 text-red-300 font-mono font-medium rounded-md text-xs flex items-center justify-center space-x-2 transition">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-red-400"></i>
+                <span>Simulate 2x ₹800 Parallel Debits</span>
+              </button>
+              <p class="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+                Fires simultaneous debits using Promise.all(). Demonstrates zero double-spend and zero balance overdrafts.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Stream / MessageScroller Viewport (8 cols) -->
+        <div class="lg:col-span-8 flex flex-col min-h-[500px]">
+          
+          <div class="shadcn-card rounded-lg flex flex-col flex-1 relative overflow-hidden border border-border">
+            
+            <div class="px-5 py-3 border-b border-border flex items-center justify-between bg-muted/40">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-semibold text-white">Audit Journal Feed</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-border">Append-Only</span>
+              </div>
+              <button onclick="refreshStatement()" class="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-md text-xs font-mono flex items-center space-x-1.5 border border-border transition">
+                <i data-lucide="rotate-cw" class="w-3 h-3"></i>
+                <span>Sync</span>
+              </button>
+            </div>
+
+            <!-- Scrollable Viewport with Jump to Latest -->
+            <div id="journalViewport" class="flex-1 overflow-y-auto p-4 space-y-3 relative">
+              <div id="journalFeedContainer" class="flex flex-col gap-2.5">
+                <!-- Dynamically populated journal cards -->
+              </div>
+            </div>
+
+            <!-- Floating Jump To Latest Button -->
+            <button id="btnScrollToLatest" onclick="scrollToLatest()" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-20 rounded-full border border-border bg-zinc-900/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-white shadow-lg hover:bg-zinc-800 flex items-center space-x-1.5 transition">
+              <i data-lucide="arrow-down" class="w-3 h-3"></i>
+              <span>Jump to latest</span>
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Spring Pop Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2.5 rounded-lg shadow-2xl text-xs font-medium z-50 transition-all border animate-spring-pop"></div>
+
+  <script src="/app.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
 </html>

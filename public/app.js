@@ -2,12 +2,11 @@ let currentUser = null;
 let currentToken = localStorage.getItem('token');
 let currentAccount = null;
 
-// Raw balance in major currency units (Rupees)
 let rawCurrentBalance = 0;
 let isCurrency = true;
 let isCompact = false;
 
-// DOM Elements
+// DOM References
 const loginSection = document.getElementById('loginSection');
 const dashboardSection = document.getElementById('dashboardSection');
 const authHeaderState = document.getElementById('authHeaderState');
@@ -24,7 +23,35 @@ const badgeLabel = document.getElementById('badgeLabel');
 const switchCurrencyEl = document.getElementById('switchCurrency');
 const switchCompactEl = document.getElementById('switchCompact');
 
-// Number Animation (matching AnimateNumber visualDuration & spring bounce)
+// Alert Banner elements
+const alertBannerContainer = document.getElementById('alertBannerContainer');
+const alertTitle = document.getElementById('alertTitle');
+const alertDescription = document.getElementById('alertDescription');
+const alertIcon = document.getElementById('alertIcon');
+
+// SplitText Character Animation
+function splitTextAnimation(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const text = el.textContent;
+    el.innerHTML = '';
+
+    [...text].forEach((char, i) => {
+        const span = document.createElement('span');
+        span.textContent = char;
+        span.className = 'split-char';
+        span.style.opacity = '0';
+        span.style.transform = i % 2 === 0 ? 'translateY(8px)' : 'translateY(-8px)';
+        el.appendChild(span);
+
+        setTimeout(() => {
+            span.style.opacity = '1';
+            span.style.transform = 'translateY(0)';
+        }, 40 * i);
+    });
+}
+
+// AnimateNumber Count Transition
 let currentDisplayedValue = 0;
 let numberAnimationId = null;
 
@@ -37,8 +64,6 @@ function animateNumber(targetValue, durationMs = 600) {
     function step(now) {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / durationMs, 1);
-
-        // Spring ease curve approximation
         const ease = 1 - Math.pow(1 - progress, 3);
         const interpolated = startValue + (targetValue - startValue) * ease;
         currentDisplayedValue = interpolated;
@@ -58,7 +83,6 @@ function animateNumber(targetValue, durationMs = 600) {
 
 function renderFormattedBalance(val) {
     let display = '';
-
     if (isCompact) {
         if (val >= 1000000) {
             display = (val / 1000000).toFixed(1) + 'M';
@@ -74,7 +98,7 @@ function renderFormattedBalance(val) {
     cardBalanceEl.textContent = isCurrency ? `₹${display}` : display;
 }
 
-// Switch Event Handlers
+// Switch Listeners
 switchCurrencyEl.addEventListener('click', () => {
     isCurrency = !isCurrency;
     switchCurrencyEl.setAttribute('data-is-on', isCurrency);
@@ -87,7 +111,7 @@ switchCompactEl.addEventListener('click', () => {
     renderFormattedBalance(currentDisplayedValue);
 });
 
-// Viewport Scroll Handling
+// Viewport Scroll Detection
 if (journalViewport) {
     journalViewport.addEventListener('scroll', () => {
         const isAtBottom = journalViewport.scrollHeight - journalViewport.scrollTop - journalViewport.clientHeight < 60;
@@ -105,23 +129,45 @@ function scrollToLatest() {
     }
 }
 
+// Alerts & Badges
+function showAlert(title, desc, isError = false) {
+    alertTitle.textContent = title;
+    alertDescription.textContent = desc;
+    alertBannerContainer.classList.remove('hidden');
+
+    if (isError) {
+        alertBanner.className = 'relative w-full rounded-lg border border-red-900/50 bg-red-950/20 p-4 text-red-300 flex items-start gap-3';
+        alertIcon.setAttribute('data-lucide', 'alert-circle');
+    } else {
+        alertBanner.className = 'relative w-full rounded-lg border border-emerald-900/50 bg-emerald-950/20 p-4 text-emerald-300 flex items-start gap-3';
+        alertIcon.setAttribute('data-lucide', 'check-circle-2');
+    }
+    lucide.createIcons();
+}
+
+function dismissAlert() {
+    alertBannerContainer.classList.add('hidden');
+}
+
 function setBadgeState(text, isError = false) {
     badgeLabel.textContent = text;
-    badgeStatus.className = `motion-badge transition ${isError ? 'border-red-900/60 text-red-400' : 'border-zinc-800 text-zinc-300'}`;
+    badgeStatus.className = `inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-mono border transition ${isError ? 'bg-red-950/40 text-red-400 border-red-900/50' : 'bg-muted text-zinc-300 border-border'
+        }`;
 }
 
 function showToast(msg, isError = false) {
     toastEl.innerHTML = `
     <div class="flex items-center space-x-2">
-      <i class="fa-solid ${isError ? 'fa-circle-xmark text-red-400' : 'fa-circle-check text-emerald-400'} text-xs"></i>
+      <i data-lucide="${isError ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 ${isError ? 'text-red-400' : 'text-emerald-400'}"></i>
       <span>${msg}</span>
     </div>
   `;
     toastEl.className = `fixed bottom-5 right-5 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-medium z-50 flex items-center transition-all animate-spring-pop ${isError
-        ? 'bg-zinc-950 text-red-300 border-red-900/50'
-        : 'bg-zinc-950 text-emerald-300 border-emerald-900/50'
+            ? 'bg-zinc-950 text-red-300 border-red-900/50'
+            : 'bg-zinc-950 text-emerald-300 border-emerald-900/50'
         }`;
     toastEl.classList.remove('hidden');
+    lucide.createIcons();
     setTimeout(() => toastEl.classList.add('hidden'), 4000);
 }
 
@@ -165,6 +211,7 @@ function logout() {
     dashboardSection.classList.add('hidden');
     loginSection.classList.remove('hidden');
     authHeaderState.innerHTML = '';
+    dismissAlert();
     setBadgeState('LOGGED OUT');
 }
 
@@ -202,6 +249,7 @@ async function initApp() {
     }
 
     document.getElementById('cardAccount').textContent = currentAccount;
+    splitTextAnimation('brandTitle');
     await refreshStatement();
 }
 
@@ -216,7 +264,7 @@ async function refreshStatement() {
         if (!res.ok) throw new Error(data.error);
 
         rawCurrentBalance = data.currentBalance / 100;
-        animateNumber(rawCurrentBalance, 650);
+        animateNumber(rawCurrentBalance, 600);
 
         journalFeedContainer.innerHTML = '';
 
@@ -266,6 +314,7 @@ async function refreshStatement() {
         showToast(err.message, true);
     } finally {
         balanceLoadingDots.classList.add('hidden');
+        lucide.createIcons();
     }
 }
 
@@ -279,7 +328,7 @@ transferForm.addEventListener('submit', async (e) => {
     const idempotencyKey = `web-tx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
     try {
-        setBadgeState('LOCKING...');
+        setBadgeState('LOCKING ROWS...');
         const res = await fetch('/api/ledger/transfer', {
             method: 'POST',
             headers: {
@@ -293,11 +342,13 @@ transferForm.addEventListener('submit', async (e) => {
         if (!res.ok) throw new Error(data.error);
 
         setBadgeState('COMMITTED');
+        showAlert('Payment Succeeded', `Transferred ₹${amountRupees.toFixed(2)} to ${destinationAccountNumber}. Receipt logged to append-only ledger.`);
         showToast(`Transfer settled: ₹${amountRupees.toFixed(2)}`);
         document.getElementById('transferAmount').value = '';
         await refreshStatement();
     } catch (err) {
         setBadgeState('REFUSED', true);
+        showAlert('Transaction Refused', err.message, true);
         showToast(err.message, true);
         await refreshStatement();
     }
@@ -324,6 +375,7 @@ async function simulateRaceCondition() {
     });
 
     const [res1, res2] = await Promise.all([send(key1), send(key2)]);
+    showAlert('Concurrency Attack Executed', `Simultaneous requests completed: Req 1 status ${res1.status}, Req 2 status ${res2.status}. No balance overdraft permitted.`);
     showToast(`Simulated: Req 1 (${res1.status}), Req 2 (${res2.status})`);
     await refreshStatement();
     setBadgeState('ENGINE READY');
