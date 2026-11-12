@@ -36,12 +36,11 @@ describe('LedgerLine Integrity, Concurrency & Idempotency Attacks', () => {
         await db.query("UPDATE accounts SET balance = 100000 WHERE account_number = $1", [alphaAcc]);
         await db.query("UPDATE accounts SET balance = 50000 WHERE account_number = $1", [betaAcc]);
 
-        // Truncate tables with CASCADE to preserve FK constraints
+        // Truncate tables with CASCADE to satisfy foreign keys
         await db.query("TRUNCATE TABLE ledger_entries, idempotency_keys CASCADE");
     });
 
     afterAll(async () => {
-        // Graceful pool shutdown supporting both { pool } and pool exports
         if (typeof db.end === 'function') {
             await db.end();
         } else if (db.pool && typeof db.pool.end === 'function') {

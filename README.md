@@ -15,8 +15,8 @@ LedgerLine is a multi-role financial ledger engine built to guarantee strict ato
 | Auditor (Read-Only) | auditor@ledgerline.internal | Auditor@123 |
 
 ## Live Deployment
-- **Live URL:** https://your-app-name.onrender.com
-- **Health Check:** https://your-app-name.onrender.com/health
+- **Live URL:** https://ledgerline-app.onrender.com
+- **Health Check:** https://ledgerline-app.onrender.com/health
 
 ## Seed Credentials
 | Role | Email | Password | Starting Balance |

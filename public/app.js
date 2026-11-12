@@ -99,17 +99,21 @@ function renderFormattedBalance(val) {
 }
 
 // Switch Listeners
-switchCurrencyEl.addEventListener('click', () => {
-    isCurrency = !isCurrency;
-    switchCurrencyEl.setAttribute('data-is-on', isCurrency);
-    renderFormattedBalance(currentDisplayedValue);
-});
+if (switchCurrencyEl) {
+    switchCurrencyEl.addEventListener('click', () => {
+        isCurrency = !isCurrency;
+        switchCurrencyEl.setAttribute('data-is-on', isCurrency);
+        renderFormattedBalance(currentDisplayedValue);
+    });
+}
 
-switchCompactEl.addEventListener('click', () => {
-    isCompact = !isCompact;
-    switchCompactEl.setAttribute('data-is-on', isCompact);
-    renderFormattedBalance(currentDisplayedValue);
-});
+if (switchCompactEl) {
+    switchCompactEl.addEventListener('click', () => {
+        isCompact = !isCompact;
+        switchCompactEl.setAttribute('data-is-on', isCompact);
+        renderFormattedBalance(currentDisplayedValue);
+    });
+}
 
 // Viewport Scroll Detection
 if (journalViewport) {
@@ -157,14 +161,12 @@ function setBadgeState(text, isError = false) {
 
 function showToast(msg, isError = false) {
     toastEl.innerHTML = `
-    <div class="flex items-center space-x-2">
-      <i data-lucide="${isError ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 ${isError ? 'text-red-400' : 'text-emerald-400'}"></i>
-      <span>${msg}</span>
-    </div>
-  `;
-    toastEl.className = `fixed bottom-5 right-5 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-medium z-50 flex items-center transition-all animate-spring-pop ${isError
-            ? 'bg-zinc-950 text-red-300 border-red-900/50'
-            : 'bg-zinc-950 text-emerald-300 border-emerald-900/50'
+        <div class="flex items-center space-x-2">
+          <i data-lucide="${isError ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 ${isError ? 'text-red-400' : 'text-emerald-400'}"></i>
+          <span>${msg}</span>
+        </div>
+    `;
+    toastEl.className = `fixed bottom-5 right-5 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-medium z-50 flex items-center transition-all animate-spring-pop ${isError ? 'bg-zinc-950 text-red-300 border-red-900/50' : 'bg-zinc-950 text-emerald-300 border-emerald-900/50'
         }`;
     toastEl.classList.remove('hidden');
     lucide.createIcons();
@@ -223,14 +225,14 @@ async function initApp() {
     dashboardSection.classList.remove('hidden');
 
     authHeaderState.innerHTML = `
-    <div class="text-right">
-      <p class="text-xs font-medium text-white leading-tight">${currentUser.name}</p>
-      <span class="text-[10px] font-mono text-muted-foreground uppercase">${currentUser.role}</span>
-    </div>
-    <button onclick="logout()" class="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-md text-xs font-mono border border-border transition">
-      Sign Out
-    </button>
-  `;
+        <div class="text-right">
+          <p class="text-xs font-medium text-white leading-tight">${currentUser.name}</p>
+          <span class="text-[10px] font-mono text-muted-foreground uppercase">${currentUser.role}</span>
+        </div>
+        <button onclick="logout()" class="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-md text-xs font-mono border border-border transition">
+          Sign Out
+        </button>
+    `;
 
     document.getElementById('cardRole').textContent = currentUser.role;
 
@@ -270,10 +272,10 @@ async function refreshStatement() {
 
         if (data.entries.length === 0) {
             journalFeedContainer.innerHTML = `
-        <div class="p-8 text-center text-xs text-muted-foreground font-mono">
-          No audit entries recorded for this account.
-        </div>
-      `;
+                <div class="p-8 text-center text-xs text-muted-foreground font-mono">
+                  No audit entries recorded for this account.
+                </div>
+            `;
             return;
         }
 
@@ -282,30 +284,31 @@ async function refreshStatement() {
         sorted.forEach((entry) => {
             const isRefused = entry.status === 'REFUSED';
             const statusBadge = isRefused
-                ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-red-950/40 text-red-400 border border-red-900/50">REFUSED</span>`
-                : `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-950/40 text-emerald-400 border border-emerald-900/50">SETTLED</span>`;
+                ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-red-950/50 text-red-400 border border-red-900/60">REFUSED</span>`
+                : `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-950/50 text-emerald-400 border border-emerald-900/60">SETTLED</span>`;
 
             const time = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
             const card = document.createElement('div');
-            card.className = 'rounded-lg bg-muted border border-border p-3 text-xs transition hover:border-zinc-700 animate-spring-pop';
+            card.className = `rounded-lg bg-zinc-950/80 border p-3.5 text-xs transition-all hover:border-zinc-700 animate-spring-pop ${isRefused ? 'border-red-950/40' : 'border-border'
+                }`;
             card.innerHTML = `
-        <div class="flex items-center justify-between mb-1.5">
-          <div class="flex items-center space-x-2">
-            <span class="font-mono text-zinc-400 text-[11px]">${time}</span>
-            <span class="font-semibold text-white">${entry.type}</span>
-            ${statusBadge}
-          </div>
-          <div class="text-right font-mono font-bold ${isRefused ? 'text-zinc-500 line-through' : 'text-white'}">
-            ₹${(entry.amount / 100).toFixed(2)}
-          </div>
-        </div>
-        <div class="flex items-center justify-between text-[11px] text-muted-foreground font-mono pt-1.5 border-t border-zinc-800">
-          <span>Route: <span class="text-zinc-300">${entry.source_account || 'EXT'}</span> &rarr; <span class="text-zinc-300">${entry.destination_account || 'EXT'}</span></span>
-          <span>Post Balance: <span class="text-emerald-400 font-semibold">${entry.source_balance_after !== null ? `₹${(entry.source_balance_after / 100).toFixed(2)}` : '-'}</span></span>
-        </div>
-        ${entry.reason ? `<div class="mt-1 text-[10px] font-mono text-red-400">Reason: ${entry.reason}</div>` : ''}
-      `;
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center space-x-2">
+                    <span class="font-mono text-zinc-500 text-[11px]">${time}</span>
+                    <span class="font-semibold text-white tracking-wide">${entry.type}</span>
+                    ${statusBadge}
+                  </div>
+                  <div class="text-right font-mono font-bold ${isRefused ? 'text-zinc-500 line-through' : 'text-white'}">
+                    ₹${(entry.amount / 100).toFixed(2)}
+                  </div>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-muted-foreground font-mono pt-2 border-t border-zinc-900">
+                  <span>Route: <span class="text-zinc-300">${entry.source_account || 'EXT'}</span> &rarr; <span class="text-zinc-300">${entry.destination_account || 'EXT'}</span></span>
+                  <span>Post Balance: <span class="text-emerald-400 font-semibold">${entry.source_balance_after !== null ? `₹${(entry.source_balance_after / 100).toFixed(2)}` : '-'}</span></span>
+                </div>
+                ${entry.reason ? `<div class="mt-1.5 text-[10px] font-mono ${isRefused ? 'text-red-400' : 'text-zinc-400'}">Reason: ${entry.reason}</div>` : ''}
+            `;
             journalFeedContainer.appendChild(card);
         });
 
@@ -379,6 +382,28 @@ async function simulateRaceCondition() {
     showToast(`Simulated: Req 1 (${res1.status}), Req 2 (${res2.status})`);
     await refreshStatement();
     setBadgeState('ENGINE READY');
+}
+
+// Sandbox Demo Reset Handler
+async function resetSandbox() {
+    try {
+        setBadgeState('RESETTING...');
+        const res = await fetch('/api/ledger/sandbox/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to reset sandbox');
+
+        showAlert('Demo Sandbox Restored', 'Account balances reset to Alpha=₹1,000, Beta=₹500. Audit feed refreshed.');
+        showToast('Sandbox reset: Alpha=₹1,000, Beta=₹500');
+        setBadgeState('ENGINE READY');
+        await refreshStatement();
+    } catch (err) {
+        setBadgeState('ERROR', true);
+        showAlert('Reset Failed', err.message, true);
+        showToast(err.message, true);
+    }
 }
 
 if (currentToken) {
