@@ -236,63 +236,83 @@ async function initApp() {
 
     document.getElementById('cardRole').textContent = currentUser.role;
 
-    if (currentUser.role === 'ADMIN' || currentUser.role === 'AUDITOR') {
+    const submitBtn = transferForm.querySelector('button[type="submit"]');
+    const transferInputs = transferForm.querySelectorAll('input, select, button');
+
+    if (currentUser.role === 'AUDITOR') {
         currentAccount = 'ACC-ALPHA-100';
         document.getElementById('sourceAccInput').value = 'ACC-ALPHA-100';
         document.getElementById('destAccInput').value = 'ACC-BETA-200';
-    } else if (currentUser.email === 'alpha@ledgerline.internal') {
-        currentAccount = 'ACC-ALPHA-100';
-        document.getElementById('sourceAccInput').value = 'ACC-ALPHA-100';
-        document.getElementById('destAccInput').value = 'ACC-BETA-200';
+        transferInputs.forEach(el => { el.disabled = true; });
+        if (submitBtn) {
+            submitBtn.textContent = '🔒 Read-Only Audit Mode (Transfers Disabled)';
+            submitBtn.style.opacity = '0.55';
+            submitBtn.style.cursor = 'not-allowed';
+        }
     } else {
-        currentAccount = 'ACC-BETA-200';
-        document.getElementById('sourceAccInput').value = 'ACC-BETA-200';
-        document.getElementById('destAccInput').value = 'ACC-ALPHA-100';
+        transferInputs.forEach(el => { el.disabled = false; });
+        if (submitBtn) {
+            submitBtn.textContent = 'Submit Atomic Transfer ↑';
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+        }
+        if (currentUser.role === 'ADMIN') {
+            currentAccount = 'ACC-ALPHA-100';
+            document.getElementById('sourceAccInput').value = 'ACC-ALPHA-100';
+            document.getElementById('destAccInput').value = 'ACC-BETA-200';
+        } else if (currentUser.email === 'alpha@ledgerline.internal') {
+            currentAccount = 'ACC-ALPHA-100';
+            document.getElementById('sourceAccInput').value = 'ACC-ALPHA-100';
+            document.getElementById('destAccInput').value = 'ACC-BETA-200';
+        } else {
+            currentAccount = 'ACC-BETA-200';
+            document.getElementById('sourceAccInput').value = 'ACC-BETA-200';
+            document.getElementById('destAccInput').value = 'ACC-ALPHA-100';
+        }
+
+        document.getElementById('cardAccount').textContent = currentAccount;
+        splitTextAnimation('brandTitle');
+        await refreshStatement();
     }
 
-    document.getElementById('cardAccount').textContent = currentAccount;
-    splitTextAnimation('brandTitle');
-    await refreshStatement();
-}
+    async function refreshStatement() {
+        if (!currentAccount) return;
+        try {
+            balanceLoadingDots.classList.remove('hidden');
+            const res = await fetch(`/api/ledger/accounts/${currentAccount}/statement`, {
+                headers: { 'Authorization': `Bearer ${currentToken}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
 
-async function refreshStatement() {
-    if (!currentAccount) return;
-    try {
-        balanceLoadingDots.classList.remove('hidden');
-        const res = await fetch(`/api/ledger/accounts/${currentAccount}/statement`, {
-            headers: { 'Authorization': `Bearer ${currentToken}` }
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+            rawCurrentBalance = data.currentBalance / 100;
+            animateNumber(rawCurrentBalance, 600);
 
-        rawCurrentBalance = data.currentBalance / 100;
-        animateNumber(rawCurrentBalance, 600);
+            journalFeedContainer.innerHTML = '';
 
-        journalFeedContainer.innerHTML = '';
-
-        if (data.entries.length === 0) {
-            journalFeedContainer.innerHTML = `
+            if (data.entries.length === 0) {
+                journalFeedContainer.innerHTML = `
                 <div class="p-8 text-center text-xs text-muted-foreground font-mono">
                   No audit entries recorded for this account.
                 </div>
             `;
-            return;
-        }
+                return;
+            }
 
-        const sorted = [...data.entries].reverse();
+            const sorted = [...data.entries].reverse();
 
-        sorted.forEach((entry) => {
-            const isRefused = entry.status === 'REFUSED';
-            const statusBadge = isRefused
-                ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-red-950/50 text-red-400 border border-red-900/60">REFUSED</span>`
-                : `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-950/50 text-emerald-400 border border-emerald-900/60">SETTLED</span>`;
+            sorted.forEach((entry) => {
+                const isRefused = entry.status === 'REFUSED';
+                const statusBadge = isRefused
+                    ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-red-950/50 text-red-400 border border-red-900/60">REFUSED</span>`
+                    : `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-950/50 text-emerald-400 border border-emerald-900/60">SETTLED</span>`;
 
-            const time = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const time = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-            const card = document.createElement('div');
-            card.className = `rounded-lg bg-zinc-950/80 border p-3.5 text-xs transition-all hover:border-zinc-700 animate-spring-pop ${isRefused ? 'border-red-950/40' : 'border-border'
-                }`;
-            card.innerHTML = `
+                const card = document.createElement('div');
+                card.className = `rounded-lg bg-zinc-950/80 border p-3.5 text-xs transition-all hover:border-zinc-700 animate-spring-pop ${isRefused ? 'border-red-950/40' : 'border-border'
+                    }`;
+                card.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
                   <div class="flex items-center space-x-2">
                     <span class="font-mono text-zinc-500 text-[11px]">${time}</span>
@@ -309,103 +329,103 @@ async function refreshStatement() {
                 </div>
                 ${entry.reason ? `<div class="mt-1.5 text-[10px] font-mono ${isRefused ? 'text-red-400' : 'text-zinc-400'}">Reason: ${entry.reason}</div>` : ''}
             `;
-            journalFeedContainer.appendChild(card);
-        });
+                journalFeedContainer.appendChild(card);
+            });
 
-        scrollToLatest();
-    } catch (err) {
-        showToast(err.message, true);
-    } finally {
-        balanceLoadingDots.classList.add('hidden');
-        lucide.createIcons();
+            scrollToLatest();
+        } catch (err) {
+            showToast(err.message, true);
+        } finally {
+            balanceLoadingDots.classList.add('hidden');
+            lucide.createIcons();
+        }
     }
-}
 
-transferForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const sourceAccountNumber = document.getElementById('sourceAccInput').value.trim();
-    const destinationAccountNumber = document.getElementById('destAccInput').value.trim();
-    const amountRupees = parseFloat(document.getElementById('transferAmount').value);
-    const amountPaise = Math.round(amountRupees * 100);
+    transferForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const sourceAccountNumber = document.getElementById('sourceAccInput').value.trim();
+        const destinationAccountNumber = document.getElementById('destAccInput').value.trim();
+        const amountRupees = parseFloat(document.getElementById('transferAmount').value);
+        const amountPaise = Math.round(amountRupees * 100);
 
-    const idempotencyKey = `web-tx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const idempotencyKey = `web-tx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-    try {
-        setBadgeState('LOCKING ROWS...');
-        const res = await fetch('/api/ledger/transfer', {
+        try {
+            setBadgeState('LOCKING ROWS...');
+            const res = await fetch('/api/ledger/transfer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentToken}`,
+                    'Idempotency-Key': idempotencyKey
+                },
+                body: JSON.stringify({ sourceAccountNumber, destinationAccountNumber, amount: amountPaise })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            setBadgeState('COMMITTED');
+            showAlert('Payment Succeeded', `Transferred ₹${amountRupees.toFixed(2)} to ${destinationAccountNumber}. Receipt logged to append-only ledger.`);
+            showToast(`Transfer settled: ₹${amountRupees.toFixed(2)}`);
+            document.getElementById('transferAmount').value = '';
+            await refreshStatement();
+        } catch (err) {
+            setBadgeState('REFUSED', true);
+            showAlert('Transaction Refused', err.message, true);
+            showToast(err.message, true);
+            await refreshStatement();
+        }
+    });
+
+    async function simulateRaceCondition() {
+        setBadgeState('ATTACK SIMULATION');
+        showToast('Simulating parallel debits via Promise.all()...');
+        const key1 = `race-ui-1-${Date.now()}`;
+        const key2 = `race-ui-2-${Date.now()}`;
+
+        const send = (key) => fetch('/api/ledger/transfer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${currentToken}`,
-                'Idempotency-Key': idempotencyKey
+                'Idempotency-Key': key
             },
-            body: JSON.stringify({ sourceAccountNumber, destinationAccountNumber, amount: amountPaise })
+            body: JSON.stringify({
+                sourceAccountNumber: 'ACC-ALPHA-100',
+                destinationAccountNumber: 'ACC-BETA-200',
+                amount: 80000 // ₹800
+            })
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
 
-        setBadgeState('COMMITTED');
-        showAlert('Payment Succeeded', `Transferred ₹${amountRupees.toFixed(2)} to ${destinationAccountNumber}. Receipt logged to append-only ledger.`);
-        showToast(`Transfer settled: ₹${amountRupees.toFixed(2)}`);
-        document.getElementById('transferAmount').value = '';
+        const [res1, res2] = await Promise.all([send(key1), send(key2)]);
+        showAlert('Concurrency Attack Executed', `Simultaneous requests completed: Req 1 status ${res1.status}, Req 2 status ${res2.status}. No balance overdraft permitted.`);
+        showToast(`Simulated: Req 1 (${res1.status}), Req 2 (${res2.status})`);
         await refreshStatement();
-    } catch (err) {
-        setBadgeState('REFUSED', true);
-        showAlert('Transaction Refused', err.message, true);
-        showToast(err.message, true);
-        await refreshStatement();
-    }
-});
-
-async function simulateRaceCondition() {
-    setBadgeState('ATTACK SIMULATION');
-    showToast('Simulating parallel debits via Promise.all()...');
-    const key1 = `race-ui-1-${Date.now()}`;
-    const key2 = `race-ui-2-${Date.now()}`;
-
-    const send = (key) => fetch('/api/ledger/transfer', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentToken}`,
-            'Idempotency-Key': key
-        },
-        body: JSON.stringify({
-            sourceAccountNumber: 'ACC-ALPHA-100',
-            destinationAccountNumber: 'ACC-BETA-200',
-            amount: 80000 // ₹800
-        })
-    });
-
-    const [res1, res2] = await Promise.all([send(key1), send(key2)]);
-    showAlert('Concurrency Attack Executed', `Simultaneous requests completed: Req 1 status ${res1.status}, Req 2 status ${res2.status}. No balance overdraft permitted.`);
-    showToast(`Simulated: Req 1 (${res1.status}), Req 2 (${res2.status})`);
-    await refreshStatement();
-    setBadgeState('ENGINE READY');
-}
-
-// Sandbox Demo Reset Handler
-async function resetSandbox() {
-    try {
-        setBadgeState('RESETTING...');
-        const res = await fetch('/api/ledger/sandbox/reset', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to reset sandbox');
-
-        showAlert('Demo Sandbox Restored', 'Account balances reset to Alpha=₹1,000, Beta=₹500. Audit feed refreshed.');
-        showToast('Sandbox reset: Alpha=₹1,000, Beta=₹500');
         setBadgeState('ENGINE READY');
-        await refreshStatement();
-    } catch (err) {
-        setBadgeState('ERROR', true);
-        showAlert('Reset Failed', err.message, true);
-        showToast(err.message, true);
     }
-}
 
-if (currentToken) {
-    initApp();
-}
+    // Sandbox Demo Reset Handler
+    async function resetSandbox() {
+        try {
+            setBadgeState('RESETTING...');
+            const res = await fetch('/api/ledger/sandbox/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to reset sandbox');
+
+            showAlert('Demo Sandbox Restored', 'Account balances reset to Alpha=₹1,000, Beta=₹500. Audit feed refreshed.');
+            showToast('Sandbox reset: Alpha=₹1,000, Beta=₹500');
+            setBadgeState('ENGINE READY');
+            await refreshStatement();
+        } catch (err) {
+            setBadgeState('ERROR', true);
+            showAlert('Reset Failed', err.message, true);
+            showToast(err.message, true);
+        }
+    }
+
+    if (currentToken) {
+        initApp();
+    }

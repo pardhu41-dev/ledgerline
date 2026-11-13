@@ -61,8 +61,18 @@ exports.transfer = async (req, res) => {
       return res.status(404).json(response);
     }
 
-    // 3. Ownership Authorization check
-    if (req.user.role === 'ACCOUNT_HOLDER' && sourceAcc.user_id !== req.user.id) {
+    // 3. Ownership & Role Authorization check
+    if (req.user.role === 'AUDITOR') {
+      const response = { error: 'Forbidden: Auditor role is strictly read-only' };
+      await client.query(
+        'UPDATE idempotency_keys SET status = $1::TEXT, response_code = $2::INT, response_body = $3::JSONB WHERE key = $4::TEXT',
+        ['FAILED', 403, JSON.stringify(response), idempotencyKey]
+      );
+      await client.query('COMMIT');
+      return res.status(403).json(response);
+    }
+
+    if (req.user.role !== 'ADMIN' && sourceAcc.user_id !== req.user.id) {
       const response = { error: 'Unauthorized: You do not own the source account' };
       await client.query(
         'UPDATE idempotency_keys SET status = $1::TEXT, response_code = $2::INT, response_body = $3::JSONB WHERE key = $4::TEXT',

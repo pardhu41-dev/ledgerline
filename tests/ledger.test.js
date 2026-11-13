@@ -127,6 +127,30 @@ describe('LedgerLine Integrity, Concurrency & Idempotency Attacks', () => {
         expect(res.status).toBe(403);
     });
 
+    // --- ATTACK 4: Read-Only Auditor Boundary ---
+    test('Attack 4: Auditor Boundary — Read-only Auditor cannot initiate transfers', async () => {
+        const auditorUser = (await db.query("SELECT id, email, role FROM users WHERE role = 'AUDITOR' LIMIT 1")).rows[0];
+        if (!auditorUser) return;
+
+        const secret = process.env.JWT_SECRET || 'super_secret_ledgerline_jwt_key_2026';
+        const auditorToken = jwt.sign(
+            { id: auditorUser.id, email: auditorUser.email, role: auditorUser.role },
+            secret,
+            { expiresIn: '1h' }
+        );
+
+        const res = await request(app)
+            .post('/api/ledger/transfer')
+            .set('Authorization', `Bearer ${auditorToken}`)
+            .set('Idempotency-Key', `auditor-attack-${Date.now()}`)
+            .send({
+                sourceAccountNumber: alphaAcc,
+                destinationAccountNumber: betaAcc,
+                amount: 10000
+            });
+
+        expect(res.status).toBe(403);
+    });
     // --- INVARIANT CHECK: Conservation of Money ---
     test('Invariant Check: Conservation of Money — Total sum across accounts matches invariant', async () => {
         const sumBefore = await db.query("SELECT SUM(balance) as total FROM accounts");
