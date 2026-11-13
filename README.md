@@ -2,9 +2,8 @@
 
 LedgerLine is a multi-role financial ledger engine built to guarantee strict atomicity, idempotency, and concurrency safety.
 
-## Live Deployment
-- **Frontend URL:** [Pending]
-- **API URL:** [Pending]
+## Demo Video
+- **5-Minute Demo Walkthrough:** [Watch on YouTube](https://youtu.be/9kzlnLK6V-k?si=QMBIKBu-FCZnv0Uk)
 
 ## Seed Credentials
 | Role | Email | Password |
